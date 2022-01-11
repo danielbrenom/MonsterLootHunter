@@ -1,0 +1,13 @@
+{
+  "Author": "Daniel Guiomarino",
+  "Name": "Monster Loot Hunter",
+  "Punchline": "A monster loot finder plugin.",
+  "Description": "A monster loot finder plugin. List any major slash-command(s).",
+  "InternalName": "monsterLootHunter",
+  "ApplicableVersion": "any",
+  "Tags": [
+    "monster",
+    "loot",
+    "hunter"
+  ]
+}
