@@ -1,6 +1,7 @@
 ﻿using System;
 using Dalamud.Data;
 using Dalamud.Game.Command;
+using Dalamud.Game.Gui;
 using Dalamud.IoC;
 using Dalamud.Plugin;
 
@@ -14,6 +15,8 @@ namespace MonsterLootHunter
         [PluginService] internal static DalamudPluginInterface PluginInterface { get; private set; } = null!;
         [PluginService] internal static CommandManager CommandManager { get; private set; } = null!;
         [PluginService] internal static DataManager DataManager { get; private set; } = null!;
+        [PluginService] internal static GameGui GameGui { get; private set; } = null!;
+        [PluginService] internal static ChatGui ChatGui { get; private set; } = null!;
         private Configuration Configuration { get; init; }
         private PluginUI PluginUi { get; init; }
 
@@ -34,6 +37,9 @@ namespace MonsterLootHunter
         {
             PluginUi.Dispose();
             CommandManager.RemoveHandler(commandName);
+            PluginInterface.UiBuilder.Draw -= DrawUi;
+            PluginInterface.UiBuilder.OpenConfigUi -= DrawConfigUi;
+            GC.SuppressFinalize(this);
         }
 
         private void OnCommand(string command, string args)
