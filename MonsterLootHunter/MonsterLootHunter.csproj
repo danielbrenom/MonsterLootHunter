@@ -55,6 +55,11 @@
             <Private>false</Private>
         </Reference>
     </ItemGroup>
+    <ItemGroup>
+      <Content Include="..\repo.json">
+        <Link>repo.json</Link>
+      </Content>
+    </ItemGroup>
     <Target Name="PostBuild" AfterTargets="PostBuildEvent">
         <Exec Command="if $(Configuration) == Release powershell Compress-Archive -Force $(TargetDir)* $(SolutionDir)$(SolutionName).zip" />
     </Target>
