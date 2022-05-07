@@ -5,6 +5,8 @@
   "Description": "A monster loot finder plugin. List any major slash-command(s).",
   "InternalName": "monsterLootHunter",
   "ApplicableVersion": "any",
+  "Changelog": "- API version bump \n- Fix monster loot drops",
+  "AssemblyVersion": "0.0.0.2",
   "Tags": [
     "monster",
     "loot",

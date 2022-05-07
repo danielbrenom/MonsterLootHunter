@@ -62,6 +62,13 @@ namespace MonsterLootHunter
             get => _lastSearchString;
             set => _lastSearchString = value;
         }
+        private bool _contextMenuIntegration;
+
+        public bool ContextMenuIntegration
+        {
+            get => _contextMenuIntegration;
+            set => _contextMenuIntegration = value;
+        }
 
         #endregion
 
@@ -74,33 +81,20 @@ namespace MonsterLootHunter
             _selectedItem = new Item();
         }
 
-        public void Draw()
-        {
-            // This is our only draw handler attached to UIBuilder, so it needs to be
-            // able to draw any windows we might have open.
-            // Each method checks its own visibility/state to ensure it only draws when
-            // it actually makes sense.
-            // There are other ways to do this, but it is generally best to keep the number of
-            // draw delegates as low as possible.
-
-            DrawMainWindow();
-            DrawSettingsWindow();
-        }
-
-        private void DrawMainWindow()
+        public bool Draw()
         {
             if (!Visible)
             {
-                return;
+                return false;
             }
 
             if (_sortedCategoriesAndItems == null)
             {
                 _sortedCategoriesAndItems = SortCategoriesAndItems();
-                return;
+                return true;
             }
 
-            _enumerableCategoriesAndItems = _sortedCategoriesAndItems.ToList();
+            _enumerableCategoriesAndItems ??= _sortedCategoriesAndItems.ToList();
 
             if (_searchString != _lastSearchString)
             {
@@ -124,7 +118,7 @@ namespace MonsterLootHunter
             if (!ImGui.Begin("Monster Loot Hunter", ref _visible, ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoScrollWithMouse))
             {
                 ImGui.End();
-                return;
+                return _visible;
             }
 
             ImGui.BeginChild("lootListColumn", new Vector2(267, 0) * scale, true);
@@ -194,6 +188,19 @@ namespace MonsterLootHunter
             #endregion
 
             ImGui.EndChild();
+            
+            #region Checkboxes
+
+            var contextMenuIntegration = _configuration.ContextMenuIntegration;
+            if (ImGui.Checkbox("Context menu integration", ref contextMenuIntegration))
+            {
+                _configuration.ContextMenuIntegration = contextMenuIntegration;
+                // Plugin.PluginInterface.SavePluginConfig(_configuration);
+                _configuration.Save();
+                Plugin.ChatGui.Print($"Menu context integrations is {contextMenuIntegration} and configuration is {_configuration.ContextMenuIntegration}");
+            }
+            #endregion
+            
             ImGui.EndChild();
             ImGui.SameLine();
             ImGui.BeginChild("panelColumn", new Vector2(0, 0), false, ImGuiWindowFlags.NoScrollbar);
@@ -331,6 +338,7 @@ namespace MonsterLootHunter
 
             ImGui.EndChild();
             ImGui.End();
+            return _visible;
         }
 
         private void DrawSettingsWindow()
@@ -341,23 +349,17 @@ namespace MonsterLootHunter
             }
 
             ImGui.SetNextWindowSize(new Vector2(232, 75), ImGuiCond.Always);
-            if (ImGui.Begin("A Wonderful Configuration Window", ref _settingsVisible,
+            if (ImGui.Begin("Configuration", ref _settingsVisible,
                             ImGuiWindowFlags.NoResize | ImGuiWindowFlags.NoCollapse | ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoScrollWithMouse))
             {
                 // can't ref a property, so use a local copy
-                var configValue = _configuration.SomePropertyToBeSavedAndWithADefault;
-                if (ImGui.Checkbox("Random Config Bool", ref configValue))
-                {
-                    _configuration.SomePropertyToBeSavedAndWithADefault = configValue;
-                    // can save immediately on change, if you don't want to provide a "Save and Close" button
-                    _configuration.Save();
-                }
+                
             }
 
             ImGui.End();
         }
 
-        private void ChangeSelectedItem(uint itemId)
+        internal void ChangeSelectedItem(uint itemId)
         {
             _selectedItem = _items.Single(i => i.RowId == itemId);
             var iconId = _selectedItem.Icon;
@@ -384,8 +386,6 @@ namespace MonsterLootHunter
                             sortedCategoriesDict.Add(c, _items.Where(i => i.ItemSearchCategory.Row == c.RowId).Where(i => LootIdentifierConstants.LeatherRegex.IsMatch(i.Name)).OrderBy(i => i.Name.ToString()).ToList());
                             break;
                         case LootIdentifierConstants.Reagents:
-                            sortedCategoriesDict.Add(c, _items.Where(i => i.ItemSearchCategory.Row == c.RowId && LootIdentifierConstants.ReagentsRegex.IsMatch(i.Name)).OrderBy(i => i.Name.ToString()).ToList());
-                            break;
                         case LootIdentifierConstants.Bone:
                         case LootIdentifierConstants.Ingredients:
                             sortedCategoriesDict.Add(c, _items.Where(i => i.ItemSearchCategory.Row == c.RowId).OrderBy(i => i.Name.ToString()).ToList());

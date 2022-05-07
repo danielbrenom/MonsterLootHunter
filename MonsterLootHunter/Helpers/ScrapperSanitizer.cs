@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
+using Dalamud.Logging;
 using Fizzler.Systems.HtmlAgilityPack;
 using HtmlAgilityPack;
 using MonsterLootHunter.Data;
@@ -14,6 +15,7 @@ namespace MonsterLootHunter.Helpers
             var body = document.DocumentNode.QuerySelector("div#bodyContent");
             var bodyContent = body.QuerySelector("div.mw-content-ltr div.mw-parser-output");
             lootData.LootLocations = GetMonsterDrops(bodyContent);
+            lootData.LootLocations.AddRange(GetMonsterDropsFromTable(bodyContent));
             lootData.LootPurchaseLocations = GetVendorPurchases(bodyContent);
             return lootData;
         }
@@ -36,12 +38,38 @@ namespace MonsterLootHunter.Helpers
                         })
                    .ToList();
             }
-            catch (System.Exception)
+            catch (System.Exception e)
             {
+                PluginLog.Error($"Error mouting drop from list {e.Message}, {e.StackTrace}");
                 return new List<LootDrops>();
             }
         }
-        
+
+        private static IEnumerable<LootDrops> GetMonsterDropsFromTable(HtmlNode node)
+        {
+            try
+            {
+                var dropList = node.QuerySelector("table.item tbody").QuerySelectorAll("tr").ToList();
+                dropList.RemoveAt(0);
+                return (from vendorNode in dropList
+                    select vendorNode.QuerySelectorAll("td").ToList()
+                    into lootInformation
+                    let locationAndFlag = lootInformation[3].InnerText.Split("(")
+                    let flag = locationAndFlag.Length > 1 ? $"({locationAndFlag[1]}" : string.Empty
+                    select new LootDrops
+                    {
+                        MobName = lootInformation[0].InnerText.Replace("\n", ""),
+                        MobLocation = locationAndFlag[0].Replace("\n", "").TrimEnd(),
+                        MobFlag = flag.Replace("\n", "")
+                    }).ToList();
+            }
+            catch (System.Exception e)
+            {
+                PluginLog.Error($"Error mouting drop from table {e.Message}, {e.StackTrace}");
+                return new List<LootDrops>();
+            }
+        }
+
         private static List<LootPurchase> GetVendorPurchases(HtmlNode node)
         {
             try

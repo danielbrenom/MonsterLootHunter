@@ -11,6 +11,9 @@ namespace MonsterLootHunter
     {
         public string Name => "Monster Loot Hunter";
         private const string commandName = "/monsterloot";
+        // private readonly XivCommonBase xivCommon;
+        // private readonly string contextMenuSearchString;
+        // private readonly InventoryContextMenuItem contextMenuItem;
 
         [PluginService] internal static DalamudPluginInterface PluginInterface { get; private set; } = null!;
         [PluginService] internal static CommandManager CommandManager { get; private set; } = null!;
@@ -27,29 +30,44 @@ namespace MonsterLootHunter
             PluginUi = new PluginUI(Configuration);
             CommandManager.AddHandler(commandName, new CommandInfo(OnCommand)
             {
-                HelpMessage = "Texto de ajuda para mostrar a caça"
+                HelpMessage = "Opens loot drop window."
             });
             PluginInterface.UiBuilder.Draw += DrawUi;
-            PluginInterface.UiBuilder.OpenConfigUi += DrawConfigUi;
+            // contextMenuSearchString = DataManager?.Excel.GetSheet<Addon>()?.GetRow(4379)?.Text?.RawString ?? "Search for Item";
         }
 
         public void Dispose()
         {
+            PluginInterface.SavePluginConfig(Configuration);
             PluginUi.Dispose();
             CommandManager.RemoveHandler(commandName);
             PluginInterface.UiBuilder.Draw -= DrawUi;
-            PluginInterface.UiBuilder.OpenConfigUi -= DrawConfigUi;
             GC.SuppressFinalize(this);
         }
 
         private void OnCommand(string command, string args)
         {
-            PluginUi.Visible = true;
+            if (!string.IsNullOrEmpty(args))
+            {
+                if (uint.TryParse(args, out var itemId))
+                {
+                    PluginUi.ChangeSelectedItem(itemId);
+                    PluginUi.Visible = true;
+                }
+                else
+                {
+                    PluginUi.SearchString = args;
+                    PluginUi.Visible = true;
+                }
+            }
+            else
+                PluginUi.Visible = !PluginUi.Visible;
         }
 
         private void DrawUi()
         {
-            PluginUi.Draw();
+            if (PluginUi != null && PluginUi.Visible)
+                PluginUi.Visible = PluginUi.Draw();
         }
 
         private void DrawConfigUi()
