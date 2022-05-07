@@ -15,8 +15,9 @@
     "IsTestingExclusive": "True",
     "DownloadCount": 1,
     "LastUpdate": 1651950000,
-    "DownloadLinkTesting": "https://github.com/danielbrenom/MonsterLootHunter/blob/main/MonsterLootHunter.zip",
-    "DownloadLinkUpdate": "https://github.com/danielbrenom/MonsterLootHunter/blob/main/MonsterLootHunter.zip",
+    "DownloadLinkInstall": "https://raw.githubusercontent.com/danielbrenom/MonsterLootHunter/main/MonsterLootHunter.zip",
+    "DownloadLinkTesting": "https://raw.githubusercontent.com/danielbrenom/MonsterLootHunter/main/MonsterLootHunter.zip",
+    "DownloadLinkUpdate": "https://raw.githubusercontent.com/danielbrenom/MonsterLootHunter/main/MonsterLootHunter.zip",
     "IconUrl" : null,
     "ImageUrls" : null
   }
