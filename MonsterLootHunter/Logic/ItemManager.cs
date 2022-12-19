@@ -15,11 +15,7 @@ public class ItemManager
     public ItemManager()
     {
         _items = Plugin.DataManager.GetExcelSheet<Item>();
-    }
-
-    public Dictionary<ItemSearchCategory, List<Item>> RetrieveCategoriesAndItems()
-    {
-        return CachedList ??= SortCategoriesAndItems();
+        CachedList = SortCategoriesAndItems();
     }
 
     public Item RetrieveItem(uint itemId)
