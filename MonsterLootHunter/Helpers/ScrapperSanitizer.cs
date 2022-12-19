@@ -54,14 +54,9 @@ namespace MonsterLootHunter.Helpers
                 return (from vendorNode in dropList
                     select vendorNode.QuerySelectorAll("td").ToList()
                     into lootInformation
-                    let locationAndFlag = lootInformation[3].InnerText.Split("(")
+                    let locationAndFlag = lootInformation.Last().InnerText.Split("(")
                     let flag = locationAndFlag.Length > 1 ? $"({locationAndFlag[1]}" : string.Empty
-                    select new LootDrops
-                    {
-                        MobName = lootInformation[0].InnerText.Replace("\n", ""),
-                        MobLocation = locationAndFlag[0].Replace("\n", "").TrimEnd(),
-                        MobFlag = flag.Replace("\n", "")
-                    }).ToList();
+                    select new LootDrops { MobName = lootInformation[0].InnerText.Replace("\n", ""), MobLocation = locationAndFlag[0].Replace("\n", "").TrimEnd(), MobFlag = flag.Replace("\n", "") }).ToList();
             }
             catch (System.Exception e)
             {

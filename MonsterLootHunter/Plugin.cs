@@ -11,39 +11,25 @@ namespace MonsterLootHunter
     {
         public string Name => "Monster Loot Hunter";
         private const string commandName = "/monsterloot";
-        // private readonly XivCommonBase xivCommon;
-        // private readonly string contextMenuSearchString;
-        // private readonly InventoryContextMenuItem contextMenuItem;
-
+        
         [PluginService] internal static DalamudPluginInterface PluginInterface { get; private set; } = null!;
         [PluginService] internal static CommandManager CommandManager { get; private set; } = null!;
         [PluginService] internal static DataManager DataManager { get; private set; } = null!;
         [PluginService] internal static GameGui GameGui { get; private set; } = null!;
         [PluginService] internal static ChatGui ChatGui { get; private set; } = null!;
-        private Configuration Configuration { get; init; }
         private PluginUI PluginUi { get; init; }
 
         public Plugin()
         {
-            Configuration = (Configuration)PluginInterface.GetPluginConfig() ?? new Configuration();
-            Configuration.Initialize(PluginInterface);
-            PluginUi = new PluginUI(Configuration);
+            PluginServices.Initialize(PluginInterface);
+            PluginUi = new PluginUI();
             CommandManager.AddHandler(commandName, new CommandInfo(OnCommand)
             {
                 HelpMessage = "Opens loot drop window."
             });
             PluginInterface.UiBuilder.Draw += DrawUi;
-            // contextMenuSearchString = DataManager?.Excel.GetSheet<Addon>()?.GetRow(4379)?.Text?.RawString ?? "Search for Item";
         }
 
-        public void Dispose()
-        {
-            PluginInterface.SavePluginConfig(Configuration);
-            PluginUi.Dispose();
-            CommandManager.RemoveHandler(commandName);
-            PluginInterface.UiBuilder.Draw -= DrawUi;
-            GC.SuppressFinalize(this);
-        }
 
         private void OnCommand(string command, string args)
         {
@@ -66,13 +52,23 @@ namespace MonsterLootHunter
 
         private void DrawUi()
         {
-            if (PluginUi != null && PluginUi.Visible)
+            if (PluginUi is { Visible: true })
                 PluginUi.Visible = PluginUi.Draw();
         }
 
         private void DrawConfigUi()
         {
             PluginUi.SettingsVisible = true;
+        }
+
+        public void Dispose()
+        {
+            PluginInterface.SavePluginConfig(PluginServices.Configuration);
+            PluginUi.Dispose();
+            PluginServices.Dispose();
+            CommandManager.RemoveHandler(commandName);
+            PluginInterface.UiBuilder.Draw -= DrawUi;
+            GC.SuppressFinalize(this);
         }
     }
 }

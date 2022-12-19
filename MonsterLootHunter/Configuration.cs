@@ -8,9 +8,7 @@ namespace MonsterLootHunter
     {
         public int Version { get; set; } = 1;
 
-        public bool ContextMenuIntegration { get; set; } = false;
-
-        // the below exist just to make saving less cumbersome
+        public bool ContextMenuIntegration { get; set; }
 
         [NonSerialized]
         private DalamudPluginInterface _pluginInterface;
