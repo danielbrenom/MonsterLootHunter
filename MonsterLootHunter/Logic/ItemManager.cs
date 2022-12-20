@@ -1,13 +1,14 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using Dalamud;
 using Dalamud.Logging;
 using Lumina.Excel.GeneratedSheets;
 using MonsterLootHunter.Utils;
 
 namespace MonsterLootHunter.Logic;
 
-public class ItemManager
+public class ItemManager : IServiceType
 {
     private readonly IEnumerable<Item> _items;
     private Dictionary<ItemSearchCategory, List<Item>> CachedList { get; set; }

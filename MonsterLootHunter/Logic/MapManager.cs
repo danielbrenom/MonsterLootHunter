@@ -2,13 +2,14 @@
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
+using Dalamud;
 using Dalamud.Game.Text.SeStringHandling.Payloads;
 using Dalamud.Logging;
 using Lumina.Excel.GeneratedSheets;
 
 namespace MonsterLootHunter.Logic;
 
-public class MapManager
+public class MapManager : IServiceType
 {
     private List<TerritoryType> CachedTerritories { get; }
 

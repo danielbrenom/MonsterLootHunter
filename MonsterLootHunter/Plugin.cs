@@ -2,28 +2,42 @@
 using Dalamud.Data;
 using Dalamud.Game.Command;
 using Dalamud.Game.Gui;
+using Dalamud.Interface.Windowing;
 using Dalamud.IoC;
 using Dalamud.Plugin;
+using MonsterLootHunter.Logic;
+using MonsterLootHunter.Windows;
 
 namespace MonsterLootHunter
 {
     public class Plugin : IDalamudPlugin
     {
         public string Name => "Monster Loot Hunter";
-        private const string commandName = "/monsterloot";
-        
-        [PluginService] internal static DalamudPluginInterface PluginInterface { get; private set; } = null!;
-        [PluginService] internal static CommandManager CommandManager { get; private set; } = null!;
-        [PluginService] internal static DataManager DataManager { get; private set; } = null!;
-        [PluginService] internal static GameGui GameGui { get; private set; } = null!;
-        [PluginService] internal static ChatGui ChatGui { get; private set; } = null!;
-        private PluginUI PluginUi { get; init; }
+        private const string CommandName = "/monsterloot";
 
-        public Plugin()
+        private DalamudPluginInterface PluginInterface { get; init; }
+        private CommandManager CommandManager { get; init; }
+        private DataManager DataManager { get; init; }
+        private GameGui GameGui { get; init; }
+        public WindowSystem WindowSystem = new("MonsterLootHunter");
+
+        public Plugin(
+            [RequiredVersion("1.0")] DalamudPluginInterface pluginInterface,
+            [RequiredVersion("1.0")] CommandManager commandManager,
+            [RequiredVersion("1.0")] DataManager dataManager,
+            [RequiredVersion("1.0")] GameGui gameGui)
         {
-            PluginServices.Initialize(PluginInterface);
-            PluginUi = new PluginUI();
-            CommandManager.AddHandler(commandName, new CommandInfo(OnCommand)
+            PluginInterface = pluginInterface;
+            CommandManager = commandManager;
+            DataManager = dataManager;
+            GameGui = gameGui;
+            PluginServices.Initialize(PluginInterface)
+                          .RegisterService<ItemManager>()
+                          .RegisterService<MapManager>();
+            
+            WindowSystem.AddWindow(new PluginUI(this));
+            
+            CommandManager.AddHandler(CommandName, new CommandInfo(OnCommand)
             {
                 HelpMessage = "Opens loot drop window."
             });
@@ -36,15 +50,11 @@ namespace MonsterLootHunter
             if (!string.IsNullOrEmpty(args))
             {
                 if (uint.TryParse(args, out var itemId))
-                {
                     PluginUi.ChangeSelectedItem(itemId);
-                    PluginUi.Visible = true;
-                }
                 else
-                {
                     PluginUi.SearchString = args;
-                    PluginUi.Visible = true;
-                }
+
+                PluginUi.Visible = true;
             }
             else
                 PluginUi.Visible = !PluginUi.Visible;
@@ -66,7 +76,7 @@ namespace MonsterLootHunter
             PluginInterface.SavePluginConfig(PluginServices.Configuration);
             PluginUi.Dispose();
             PluginServices.Dispose();
-            CommandManager.RemoveHandler(commandName);
+            CommandManager.RemoveHandler(CommandName);
             PluginInterface.UiBuilder.Draw -= DrawUi;
             GC.SuppressFinalize(this);
         }

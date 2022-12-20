@@ -5,6 +5,7 @@ using System.Numerics;
 using System.Threading;
 using System.Threading.Tasks;
 using Dalamud.Interface;
+using Dalamud.Interface.Windowing;
 using Dalamud.Utility;
 using ImGuiNET;
 using ImGuiScene;
@@ -12,9 +13,9 @@ using Lumina.Excel.GeneratedSheets;
 using MonsterLootHunter.Data;
 using MonsterLootHunter.Helpers;
 
-namespace MonsterLootHunter
+namespace MonsterLootHunter.Windows
 {
-    public class PluginUI : IDisposable
+    public class PluginUI : Window, IDisposable
     {
         private Item _selectedItem;
         private TextureWrap _selectedItemIcon;
@@ -65,16 +66,16 @@ namespace MonsterLootHunter
 
         #endregion
 
-        public PluginUI()
+        public PluginUI() : base("MonsterLootHunter", ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoScrollWithMouse)
         {
             _selectedItem = new Item();
         }
 
-        public bool Draw()
+        public override void Draw()
         {
             if (!Visible)
             {
-                return false;
+                return;
             }
 
             (_enumerableCategoriesAndItems, _lastSearchString) =
@@ -86,7 +87,7 @@ namespace MonsterLootHunter
             if (!ImGui.Begin("Monster Loot Hunter", ref _visible, ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoScrollWithMouse))
             {
                 ImGui.End();
-                return _visible;
+                return;
             }
 
             ImGui.BeginChild("lootListColumn", new Vector2(267, 0) * scale, true);
@@ -285,10 +286,9 @@ namespace MonsterLootHunter
 
             ImGui.EndChild();
             ImGui.End();
-            return _visible;
         }
 
-        internal void ChangeSelectedItem(uint itemId)
+        private void ChangeSelectedItem(uint itemId)
         {
             _selectedItem = PluginServices.ItemManager.RetrieveItem(itemId);
             var iconId = _selectedItem.Icon;
