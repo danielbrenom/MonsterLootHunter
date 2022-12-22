@@ -1,19 +1,26 @@
 ﻿using System;
 using System.Threading;
 using System.Threading.Tasks;
+using Dalamud;
 using HtmlAgilityPack;
 using MonsterLootHunter.Data;
+using MonsterLootHunter.Utils;
 
-namespace MonsterLootHunter.Helpers
+namespace MonsterLootHunter.Helpers;
+
+public class ScrapperClient : IServiceType
 {
-    public static class ScrapperClient
+    private readonly HtmlWeb _webClient;
+
+    public ScrapperClient()
     {
-        public static async Task<LootData> GetLootData(string lootName, CancellationToken cancellationToken)
-        {
-            var client = new HtmlWeb();
-            var uri = new UriBuilder($"https://ffxiv.consolegameswiki.com/wiki/{lootName.Replace(" ", "_")}").ToString();
-            var pageResponse = await client.LoadFromWebAsync(uri, cancellationToken);
-            return ScrapperSanitizer.ParseResponse(pageResponse, lootName);
-        }
+        _webClient = new HtmlWeb();
+    }
+
+    public async Task<LootData> GetLootData(string lootName, CancellationToken cancellationToken)
+    {
+        var uri = new UriBuilder(string.Format(PluginConstants.WikiBaseUrl, lootName.Replace(" ", "_"))).ToString();
+        var pageResponse = await _webClient.LoadFromWebAsync(uri, cancellationToken);
+        return ScrapperSanitizer.ParseResponse(pageResponse, lootName);
     }
 }

@@ -17,9 +17,13 @@
         <AssemblyVersion>1.0.3</AssemblyVersion>
         <FileVersion>1.0.3</FileVersion>
         <PackageVersion>0.0.3</PackageVersion>
+        <RestorePackagesWithLockFile>true</RestorePackagesWithLockFile>
     </PropertyGroup>
     <PropertyGroup>
         <DalamudLibPath>$(appdata)\XIVLauncher\addon\Hooks\dev\</DalamudLibPath>
+    </PropertyGroup>
+    <PropertyGroup Condition="'$([System.Runtime.InteropServices.RuntimeInformation]::IsOSPlatform($([System.Runtime.InteropServices.OSPlatform]::Linux)))'">
+        <DalamudLibPath>$(DALAMUD_HOME)/</DalamudLibPath>
     </PropertyGroup>
     <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|x64' ">
       <OutputPath>bin\Debug</OutputPath>
@@ -66,7 +70,4 @@
         <Link>repo.json</Link>
       </Content>
     </ItemGroup>
-<!--    <Target Name="PostBuild" AfterTargets="PostBuildEvent">-->
-<!--        <Exec Command="if $(Configuration) == Release powershell Compress-Archive -Force $(TargetDir)* $(SolutionDir)$(SolutionName).zip" />-->
-<!--    </Target>-->
 </Project>

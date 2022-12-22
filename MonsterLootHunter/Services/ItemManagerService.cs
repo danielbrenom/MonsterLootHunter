@@ -1,20 +1,22 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using Dalamud;
+using Dalamud.Data;
 using Dalamud.Logging;
 using Lumina.Excel.GeneratedSheets;
 using MonsterLootHunter.Utils;
 
-namespace MonsterLootHunter.Logic;
+namespace MonsterLootHunter.Services;
 
-public class ItemManager
+public class ItemManagerService : IServiceType
 {
     private readonly IEnumerable<Item> _items;
     private Dictionary<ItemSearchCategory, List<Item>> CachedList { get; set; }
 
-    public ItemManager()
+    public ItemManagerService()
     {
-        _items = Plugin.DataManager.GetExcelSheet<Item>();
+        _items = PluginServices.GetService<DataManager>().GetExcelSheet<Item>();
         CachedList = SortCategoriesAndItems();
     }
 
@@ -39,7 +41,7 @@ public class ItemManager
     {
         try
         {
-            var itemSearchCategories = Plugin.DataManager.GetExcelSheet<ItemSearchCategory>();
+            var itemSearchCategories = PluginServices.GetService<DataManager>().GetExcelSheet<ItemSearchCategory>();
             if (itemSearchCategories is null) return default;
             var sortedCategories = itemSearchCategories.Where(c => c.Category > 0).OrderBy(c => c.Category).ThenBy(c => c.Order);
             var sortedCategoriesDict = new Dictionary<ItemSearchCategory, List<Item>>();

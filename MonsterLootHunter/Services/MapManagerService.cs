@@ -2,19 +2,22 @@
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
+using Dalamud;
+using Dalamud.Data;
+using Dalamud.Game.Gui;
 using Dalamud.Game.Text.SeStringHandling.Payloads;
 using Dalamud.Logging;
 using Lumina.Excel.GeneratedSheets;
 
-namespace MonsterLootHunter.Logic;
+namespace MonsterLootHunter.Services;
 
-public class MapManager
+public class MapManagerService : IServiceType
 {
     private List<TerritoryType> CachedTerritories { get; }
 
-    public MapManager()
+    public MapManagerService()
     {
-        CachedTerritories = Plugin.DataManager.GetExcelSheet<TerritoryType>()?.ToList();
+        CachedTerritories = PluginServices.GetService<DataManager>().GetExcelSheet<TerritoryType>()?.ToList();
     }
     
     public void MarkMapFlag(string locationName, string position)
@@ -27,7 +30,7 @@ public class MapManager
             coords[0] = float.Parse(position.Split(",")[0].Replace("(", "").Replace("x", ""), CultureInfo.InvariantCulture);
             coords[1] = float.Parse(position.Split(",")[1].Replace(")", "").Replace("y", ""), CultureInfo.InvariantCulture);
             var mapPayload = new MapLinkPayload(location.RowId, location.Map.Row, coords[0], coords[1], 0.0f);
-            Plugin.GameGui.OpenMapWithMapLink(mapPayload);
+            PluginServices.GetService<GameGui>().OpenMapWithMapLink(mapPayload);
         }
         catch (Exception e)
         {
