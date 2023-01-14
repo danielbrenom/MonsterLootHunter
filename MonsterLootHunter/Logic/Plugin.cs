@@ -5,6 +5,7 @@ using Dalamud.Game.Gui;
 using Dalamud.Interface.Windowing;
 using Dalamud.IoC;
 using Dalamud.Plugin;
+using Dalamud.Utility;
 using MonsterLootHunter.Helpers;
 using MonsterLootHunter.Services;
 using MonsterLootHunter.Utils;
@@ -47,7 +48,10 @@ public class Plugin : IDalamudPlugin
 
     private void OnCommand(string command, string args)
     {
-        WindowSystem.GetWindow(PluginConstants.MainWindowName).IsOpen = true;
+        var pluginWindow = WindowSystem.GetWindow(PluginConstants.MainWindowName);
+        if (pluginWindow is not PluginUi window) return;
+        pluginWindow.IsOpen = true;
+        window.SearchString = !args.IsNullOrEmpty() ? args : string.Empty;
     }
 
     private void DrawUi()
