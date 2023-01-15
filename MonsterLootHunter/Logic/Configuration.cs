@@ -6,7 +6,8 @@ namespace MonsterLootHunter.Logic;
 
 public class Configuration : IPluginConfiguration
 {
-    public int Version { get; set; } = 1;
+    public int Version { get; set; } = 114;
+    public bool ContextMenuIntegration { get; set; } = true;
 
     [NonSerialized]
     private DalamudPluginInterface _pluginInterface;

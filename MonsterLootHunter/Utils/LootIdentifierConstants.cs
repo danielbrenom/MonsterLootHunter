@@ -11,11 +11,12 @@ namespace MonsterLootHunter.Utils
         public static readonly Regex LeatherRegex = new(LeatherPattern, RegexOptions.IgnoreCase);
 
         public const string Reagents = "Reagents";
-        private static readonly string[] ReagentSuffixes = { "secretion", "blood", "fat", "wing", "umbrella", "\\w" };
-        private static readonly string ReagentsPattern = string.Join("|", ReagentSuffixes.Select(Regex.Escape));
-        public static readonly Regex ReagentsRegex = new(ReagentsPattern, RegexOptions.IgnoreCase);
 
         public const string Bone = "Bone";
         public const string Ingredients = "Ingredients";
+
+        private static readonly string[] ExclusionSuffixes = { "approved", "grade", "enchanted" };
+        private static readonly string ExclusionPattern = string.Join("|", ExclusionSuffixes.Select(Regex.Escape));
+        public static readonly Regex ExclusionRegex = new(ExclusionPattern, RegexOptions.IgnoreCase);
     }
 }

@@ -133,6 +133,18 @@ public class PluginUi : Window, System.IDisposable
 
         ImGui.EndChild();
 
+        ImGui.Text("Settings: ");
+        ImGui.SameLine();
+        ImGui.PushFont(UiBuilder.IconFont);
+        if (ImGui.Button($"{(char)FontAwesomeIcon.Cog}"))
+        {
+            var pluginWindow = PluginServices.Instance.WindowSystem.GetWindow(PluginConstants.ConfigWindowName);
+            if (pluginWindow is not ConfigWindow window) return;
+            window.IsOpen = true;
+        }
+
+        ImGui.PopFont();
+        
         ImGui.EndChild();
         ImGui.SameLine();
         ImGui.BeginChild("panelColumn", new Vector2(0, 0), false, ImGuiWindowFlags.NoScrollbar);
@@ -188,9 +200,7 @@ public class PluginUi : Window, System.IDisposable
                     {
                         ImGui.PushFont(UiBuilder.IconFont);
                         if (ImGui.Button($"{(char)FontAwesomeIcon.MapMarkerAlt}##listing{index}", new Vector2(25 * _scale, ImGui.GetItemRectSize().Y * _scale)))
-                        {
                             PluginServices.GetService<MapManagerService>().MarkMapFlag(mob.MobLocation, mob.MobFlag);
-                        }
 
                         ImGui.PopFont();
                     }
@@ -263,7 +273,7 @@ public class PluginUi : Window, System.IDisposable
         ImGui.EndChild();
     }
 
-    private void ChangeSelectedItem(uint itemId)
+    protected internal void ChangeSelectedItem(uint itemId)
     {
         _selectedItem = PluginServices.GetService<ItemManagerService>().RetrieveItem(itemId);
         var iconId = _selectedItem.Icon;

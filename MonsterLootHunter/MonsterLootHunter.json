@@ -5,8 +5,8 @@
   "Description": "Search for specific loot from monsters and NPCs and their location.",
   "InternalName": "monsterLootHunter",
   "ApplicableVersion": "any",
-  "Changelog": "- Search term on command\n- API version bump\n- NET 7\n",
-  "AssemblyVersion": "0.0.4",
+  "Changelog": "- New short command term\n- Adds context menu integration",
+  "AssemblyVersion": "1.0.5",
   "RepoUrl": "https://github.com/danielbrenom/MonsterLootHunter",
   "DalamudApiLevel": 8,
   "Tags": [

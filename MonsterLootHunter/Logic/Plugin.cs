@@ -29,20 +29,28 @@ public class Plugin : IDalamudPlugin
     {
         PluginInterface = pluginInterface;
         CommandManager = commandManager;
-        PluginServices.Initialize(PluginInterface)
+        PluginServices.Initialize(PluginInterface, WindowSystem)
                       .RegisterService(dataManager)
                       .RegisterService(gameGui)
                       .RegisterService<ScrapperClient>()
                       .RegisterService<ItemManagerService>()
-                      .RegisterService<MapManagerService>();
-
+                      .RegisterService<MapManagerService>()
+                      .RegisterService<ContextMenu>();
+        
+        WindowSystem.AddWindow(new ConfigWindow());
         WindowSystem.AddWindow(new PluginUi());
 
         CommandManager.AddHandler(PluginConstants.CommandSlash, new CommandInfo(OnCommand)
         {
             HelpMessage = PluginConstants.CommandHelperText
         });
+        CommandManager.AddHandler(PluginConstants.ShortCommandSlash, new CommandInfo(OnCommand)
+        {
+            HelpMessage = PluginConstants.CommandHelperText
+        });
+
         PluginInterface.UiBuilder.Draw += DrawUi;
+        PluginInterface.UiBuilder.OpenConfigUi += DrawConfigUi;
     }
 
 
@@ -61,7 +69,9 @@ public class Plugin : IDalamudPlugin
 
     private void DrawConfigUi()
     {
-        return;
+        var pluginWindow = WindowSystem.GetWindow(PluginConstants.ConfigWindowName);
+        if (pluginWindow is not ConfigWindow window) return;
+        window.IsOpen = true;
     }
 
     public void Dispose()
@@ -69,6 +79,7 @@ public class Plugin : IDalamudPlugin
         PluginInterface.SavePluginConfig(PluginServices.Instance.Configuration);
         PluginServices.Dispose();
         CommandManager.RemoveHandler(PluginConstants.CommandSlash);
+        CommandManager.RemoveHandler(PluginConstants.ShortCommandSlash);
         WindowSystem.RemoveAllWindows();
         GC.SuppressFinalize(this);
     }

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 using Dalamud;
 using Dalamud.Data;
 using Dalamud.Logging;
@@ -23,6 +24,12 @@ public class ItemManagerService : IServiceType
     public Item RetrieveItem(uint itemId)
     {
         return _items.Single(i => i.RowId == itemId);
+    }
+    
+    public bool CheckSelectedItem(uint itemId)
+    {
+        var foundItem = RetrieveItem(itemId);
+        return CachedList.Any(pair => pair.Value.Any(item => item.RowId == foundItem.RowId));
     }
 
     public (List<KeyValuePair<ItemSearchCategory, List<Item>>>, string) GetEnumerableItems(string nameSearched, bool shouldPerformSearch)
@@ -51,12 +58,16 @@ public class ItemManagerService : IServiceType
                 switch (c.Name)
                 {
                     case LootIdentifierConstants.Leather:
-                        sortedCategoriesDict.Add(c, _items.Where(i => i.ItemSearchCategory.Row == c.RowId).Where(i => LootIdentifierConstants.LeatherRegex.IsMatch(i.Name)).OrderBy(i => i.Name.ToString()).ToList());
+                        sortedCategoriesDict.Add(c, _items.Where(i => i.ItemSearchCategory.Row == c.RowId)
+                                                          .Where(i => LootIdentifierConstants.LeatherRegex.IsMatch(i.Name) && !LootIdentifierConstants.ExclusionRegex.IsMatch(i.Name))
+                                                          .OrderBy(i => i.Name.ToString()).ToList());
                         break;
                     case LootIdentifierConstants.Reagents:
                     case LootIdentifierConstants.Bone:
                     case LootIdentifierConstants.Ingredients:
-                        sortedCategoriesDict.Add(c, _items.Where(i => i.ItemSearchCategory.Row == c.RowId).OrderBy(i => i.Name.ToString()).ToList());
+                        sortedCategoriesDict.Add(c, _items.Where(i => i.ItemSearchCategory.Row == c.RowId)
+                                                          .Where(i => !LootIdentifierConstants.ExclusionRegex.IsMatch(i.Name))
+                                                          .OrderBy(i => i.Name.ToString()).ToList());
                         break;
                     default:
                         continue;
