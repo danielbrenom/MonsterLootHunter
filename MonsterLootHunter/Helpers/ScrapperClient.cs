@@ -11,9 +11,11 @@ namespace MonsterLootHunter.Helpers;
 public class ScrapperClient : IServiceType
 {
     private readonly HtmlWeb _webClient;
+    private readonly ScrapperSanitizer _scrapperSanitizer;
 
-    public ScrapperClient()
+    public ScrapperClient(ScrapperSanitizer scrapperSanitizer)
     {
+        _scrapperSanitizer = scrapperSanitizer;
         _webClient = new HtmlWeb();
     }
 
@@ -21,6 +23,13 @@ public class ScrapperClient : IServiceType
     {
         var uri = new UriBuilder(string.Format(PluginConstants.WikiBaseUrl, lootName.Replace(" ", "_"))).ToString();
         var pageResponse = await _webClient.LoadFromWebAsync(uri, cancellationToken);
-        return ScrapperSanitizer.ParseResponse(pageResponse, lootName);
+        try
+        {
+            return await _scrapperSanitizer.ParseResponse(pageResponse, lootName).WaitAsync(cancellationToken);
+        }
+        catch (Exception)
+        {
+            return new LootData(lootName);
+        }
     }
 }

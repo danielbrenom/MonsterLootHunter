@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using Dalamud;
 using Dalamud.Data;
 using Dalamud.Logging;
@@ -12,24 +11,27 @@ namespace MonsterLootHunter.Services;
 
 public class ItemManagerService : IServiceType
 {
+    private readonly DataManager _dataManager;
     private readonly IEnumerable<Item> _items;
-    private Dictionary<ItemSearchCategory, List<Item>> CachedList { get; set; }
+    private Dictionary<ItemSearchCategory, List<Item>> CachedList { get; }
 
-    public ItemManagerService()
+    public ItemManagerService(DataManager dataManager)
     {
-        _items = PluginServices.GetService<DataManager>().GetExcelSheet<Item>();
+        _dataManager = dataManager;
+        _items = dataManager.GetExcelSheet<Item>();
         CachedList = SortCategoriesAndItems();
+    }
+
+
+    public bool CheckSelectedItem(uint itemId)
+    {
+        var foundItem = RetrieveItem(itemId);
+        return CachedList.Any(pair => pair.Value.Any(item => item.RowId == foundItem.RowId));
     }
 
     public Item RetrieveItem(uint itemId)
     {
         return _items.Single(i => i.RowId == itemId);
-    }
-    
-    public bool CheckSelectedItem(uint itemId)
-    {
-        var foundItem = RetrieveItem(itemId);
-        return CachedList.Any(pair => pair.Value.Any(item => item.RowId == foundItem.RowId));
     }
 
     public (List<KeyValuePair<ItemSearchCategory, List<Item>>>, string) GetEnumerableItems(string nameSearched, bool shouldPerformSearch)
@@ -48,7 +50,7 @@ public class ItemManagerService : IServiceType
     {
         try
         {
-            var itemSearchCategories = PluginServices.GetService<DataManager>().GetExcelSheet<ItemSearchCategory>();
+            var itemSearchCategories = _dataManager.GetExcelSheet<ItemSearchCategory>();
             if (itemSearchCategories is null) return default;
             var sortedCategories = itemSearchCategories.Where(c => c.Category > 0).OrderBy(c => c.Category).ThenBy(c => c.Order);
             var sortedCategoriesDict = new Dictionary<ItemSearchCategory, List<Item>>();
@@ -60,6 +62,11 @@ public class ItemManagerService : IServiceType
                     case LootIdentifierConstants.Leather:
                         sortedCategoriesDict.Add(c, _items.Where(i => i.ItemSearchCategory.Row == c.RowId)
                                                           .Where(i => LootIdentifierConstants.LeatherRegex.IsMatch(i.Name) && !LootIdentifierConstants.ExclusionRegex.IsMatch(i.Name))
+                                                          .OrderBy(i => i.Name.ToString()).ToList());
+                        break;
+                    case LootIdentifierConstants.Cloth:
+                        sortedCategoriesDict.Add(c, _items.Where(i => i.ItemSearchCategory.Row == c.RowId)
+                                                          .Where(i => !LootIdentifierConstants.ClothExclusionRegex.IsMatch(i.Name) && !LootIdentifierConstants.ExclusionRegex.IsMatch(i.Name))
                                                           .OrderBy(i => i.Name.ToString()).ToList());
                         break;
                     case LootIdentifierConstants.Reagents:

@@ -13,11 +13,13 @@ namespace MonsterLootHunter.Services;
 
 public class MapManagerService : IServiceType
 {
+    private readonly GameGui _gameGui;
     private List<TerritoryType> CachedTerritories { get; }
 
-    public MapManagerService()
+    public MapManagerService(DataManager dataManager, GameGui gameGui)
     {
-        CachedTerritories = PluginServices.GetService<DataManager>().GetExcelSheet<TerritoryType>()?.ToList();
+        _gameGui = gameGui;
+        CachedTerritories = dataManager.GetExcelSheet<TerritoryType>()?.ToList();
     }
     
     public void MarkMapFlag(string locationName, string position)
@@ -30,7 +32,7 @@ public class MapManagerService : IServiceType
             coords[0] = float.Parse(position.Split(",")[0].Replace("(", "").Replace("x", ""), CultureInfo.InvariantCulture);
             coords[1] = float.Parse(position.Split(",")[1].Replace(")", "").Replace("y", ""), CultureInfo.InvariantCulture);
             var mapPayload = new MapLinkPayload(location.RowId, location.Map.Row, coords[0], coords[1], 0.0f);
-            PluginServices.GetService<GameGui>().OpenMapWithMapLink(mapPayload);
+            _gameGui.OpenMapWithMapLink(mapPayload);
         }
         catch (Exception e)
         {

@@ -1,5 +1,4 @@
-﻿
-using System;
+﻿using System;
 using System.Numerics;
 using Dalamud.Interface.Windowing;
 using ImGuiNET;
@@ -11,10 +10,13 @@ namespace MonsterLootHunter.Windows;
 
 public class ConfigWindow : Window, IDisposable
 {
+    private readonly PluginServiceFactory _pluginServiceFactoryFactory;
     private readonly float _scale;
     private bool _contextIntegration;
-    public ConfigWindow() : base(PluginConstants.ConfigWindowName, ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoScrollWithMouse)
+
+    public ConfigWindow(PluginServiceFactory serviceFactoryFactory) : base(PluginConstants.ConfigWindowName, ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoScrollWithMouse)
     {
+        _pluginServiceFactoryFactory = serviceFactoryFactory;
         _scale = ImGui.GetIO().FontGlobalScale;
         Size = new Vector2(250, 150) * _scale;
         SizeConstraints = new WindowSizeConstraints
@@ -27,20 +29,20 @@ public class ConfigWindow : Window, IDisposable
 
     public override void Draw()
     {
-        _contextIntegration = PluginServices.Instance.Configuration.ContextMenuIntegration;
+        _contextIntegration = _pluginServiceFactoryFactory.Create<Configuration>().ContextMenuIntegration;
         ImGui.BeginChild("configurations", new Vector2(250, -1f) * _scale);
-        if (ImGui.Checkbox("Context menu integration", ref _contextIntegration)) 
-            PluginServices.Instance.Configuration.ContextMenuIntegration = _contextIntegration;
+        if (ImGui.Checkbox("Context menu integration", ref _contextIntegration))
+            _pluginServiceFactoryFactory.Create<Configuration>().ContextMenuIntegration = _contextIntegration;
 
         if (ImGui.Button("Save and close"))
             IsOpen = false;
-        
+
         ImGui.EndChild();
     }
 
     public override void OnClose()
     {
-        PluginServices.Instance.Configuration.Save();
+        _pluginServiceFactoryFactory.Create<Configuration>().Save();
         base.OnClose();
     }
 

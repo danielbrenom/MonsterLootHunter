@@ -7,6 +7,7 @@ using Dalamud.Data;
 using Dalamud.Interface;
 using Dalamud.Interface.Windowing;
 using Dalamud.Logging;
+using Dalamud.Plugin;
 using Dalamud.Utility;
 using ImGuiNET;
 using ImGuiScene;
@@ -20,6 +21,7 @@ namespace MonsterLootHunter.Windows;
 
 public class PluginUi : Window, System.IDisposable
 {
+    private readonly PluginServiceFactory _pluginServiceFactory;
     private Item _selectedItem;
     private TextureWrap _selectedItemIcon;
     private List<KeyValuePair<ItemSearchCategory, List<Item>>> _enumerableCategoriesAndItems;
@@ -47,8 +49,9 @@ public class PluginUi : Window, System.IDisposable
 
     #endregion
 
-    public PluginUi() : base(PluginConstants.MainWindowName, ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoScrollWithMouse)
+    public PluginUi(PluginServiceFactory serviceFactory) : base(PluginConstants.MainWindowName, ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoScrollWithMouse)
     {
+        _pluginServiceFactory = serviceFactory;
         _selectedItem = new Item();
         _tokenSource = new CancellationTokenSource();
         _scale = ImGui.GetIO().FontGlobalScale;
@@ -63,7 +66,7 @@ public class PluginUi : Window, System.IDisposable
     public override void Draw()
     {
         (_enumerableCategoriesAndItems, _lastSearchString) =
-            PluginServices.GetService<ItemManagerService>().GetEnumerableItems(_searchString, _searchString != _lastSearchString);
+            _pluginServiceFactory.Create<ItemManagerService>().GetEnumerableItems(_searchString, _searchString != _lastSearchString);
 
         ImGui.BeginChild("lootListColumn", new Vector2(267, 0) * _scale, true);
         ImGui.SetNextItemWidth(ImGui.GetIO().FontGlobalScale - ImGui.GetStyle().ItemSpacing.X);
@@ -138,13 +141,13 @@ public class PluginUi : Window, System.IDisposable
         ImGui.PushFont(UiBuilder.IconFont);
         if (ImGui.Button($"{(char)FontAwesomeIcon.Cog}"))
         {
-            var pluginWindow = PluginServices.Instance.WindowSystem.GetWindow(PluginConstants.ConfigWindowName);
+            var pluginWindow = _pluginServiceFactory.Create<WindowSystem>().GetWindow(PluginConstants.ConfigWindowName);
             if (pluginWindow is not ConfigWindow window) return;
             window.IsOpen = true;
         }
 
         ImGui.PopFont();
-        
+
         ImGui.EndChild();
         ImGui.SameLine();
         ImGui.BeginChild("panelColumn", new Vector2(0, 0), false, ImGuiWindowFlags.NoScrollbar);
@@ -170,7 +173,7 @@ public class PluginUi : Window, System.IDisposable
             ImGui.BeginChild("droppedBy", new Vector2(0.0f, tableHeight));
             ImGui.Columns(4, "droppedByColumns");
             ImGui.SetColumnWidth(0, 200.0f);
-            ImGui.SetColumnWidth(1, 200.0f);
+            ImGui.SetColumnWidth(1, 230.0f);
             ImGui.SetColumnWidth(2, 100.0f);
             ImGui.SetColumnWidth(3, 40.0f);
             ImGui.Separator();
@@ -200,7 +203,7 @@ public class PluginUi : Window, System.IDisposable
                     {
                         ImGui.PushFont(UiBuilder.IconFont);
                         if (ImGui.Button($"{(char)FontAwesomeIcon.MapMarkerAlt}##listing{index}", new Vector2(25 * _scale, ImGui.GetItemRectSize().Y * _scale)))
-                            PluginServices.GetService<MapManagerService>().MarkMapFlag(mob.MobLocation, mob.MobFlag);
+                            _pluginServiceFactory.Create<MapManagerService>().MarkMapFlag(mob.MobLocation, mob.MobFlag);
 
                         ImGui.PopFont();
                     }
@@ -211,9 +214,9 @@ public class PluginUi : Window, System.IDisposable
             }
             else
             {
-                ImGui.Text("The Wiki doesn't have");
+                ImGui.Text("This probably isn't");
                 ImGui.NextColumn();
-                ImGui.Text("this information");
+                ImGui.Text("obtained from mobs");
             }
 
             ImGui.EndChild();
@@ -256,9 +259,9 @@ public class PluginUi : Window, System.IDisposable
             }
             else
             {
-                ImGui.Text("The Wiki doesn't have ");
+                ImGui.Text("This probably isn't");
                 ImGui.NextColumn();
-                ImGui.Text("this information");
+                ImGui.Text("obtained from NPCs");
             }
 
             ImGui.EndChild();
@@ -275,23 +278,23 @@ public class PluginUi : Window, System.IDisposable
 
     protected internal void ChangeSelectedItem(uint itemId)
     {
-        _selectedItem = PluginServices.GetService<ItemManagerService>().RetrieveItem(itemId);
+        _selectedItem = _pluginServiceFactory.Create<ItemManagerService>().RetrieveItem(itemId);
         var iconId = _selectedItem.Icon;
-        var iconTexFile = PluginServices.GetService<DataManager>().GetIcon(iconId);
+        var iconTexFile = _pluginServiceFactory.Create<DataManager>().GetIcon(iconId);
         _selectedItemIcon?.Dispose();
-        _selectedItemIcon = PluginServices.Instance.PluginInterface.UiBuilder
-                                          .LoadImageRaw(iconTexFile?.GetRgbaImageData() ?? System.Array.Empty<byte>(),
-                                                        iconTexFile.Header.Width,
-                                                        iconTexFile.Header.Height,
-                                                        4);
+        if (iconTexFile is not null)
+            _selectedItemIcon = _pluginServiceFactory.Create<DalamudPluginInterface>().UiBuilder
+                                                            .LoadImageRaw(iconTexFile.GetRgbaImageData(),
+                                                                          iconTexFile.Header.Width,
+                                                                          iconTexFile.Header.Height, 4);
         Task.Run(async () =>
         {
             try
             {
                 _lootData = default;
                 var token = _tokenSource.Token;
-                _lootData = await PluginServices.GetService<ScrapperClient>().GetLootData(_selectedItem.Name, token)
-                                                .ConfigureAwait(false);
+                _lootData = await _pluginServiceFactory.Create<ScrapperClient>().GetLootData(_selectedItem.Name, token)
+                                                              .ConfigureAwait(false);
                 token.ThrowIfCancellationRequested();
             }
             catch (System.OperationCanceledException e)
@@ -304,6 +307,7 @@ public class PluginUi : Window, System.IDisposable
     public void Dispose()
     {
         _selectedItemIcon?.Dispose();
+        _tokenSource?.Dispose();
         System.GC.SuppressFinalize(this);
     }
 }

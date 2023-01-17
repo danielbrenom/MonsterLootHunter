@@ -1,47 +1,53 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
-using Dalamud.Logging;
+using System.Text.RegularExpressions;
+using System.Threading.Tasks;
+using Dalamud;
 using Fizzler.Systems.HtmlAgilityPack;
 using HtmlAgilityPack;
 using MonsterLootHunter.Data;
 
 namespace MonsterLootHunter.Helpers
 {
-    public static class ScrapperSanitizer
+    public class ScrapperSanitizer : IServiceType
     {
-        public static LootData ParseResponse(HtmlDocument document, string lootName)
+        private LootData LootData { get; set; }
+
+        public Task<LootData> ParseResponse(HtmlDocument document, string lootName)
         {
-            var lootData = new LootData(lootName);
-            var body = document.DocumentNode.QuerySelector("div#bodyContent");
-            var bodyContent = body.QuerySelector("div.mw-content-ltr div.mw-parser-output");
-            lootData.LootLocations = GetMonsterDrops(bodyContent);
-            lootData.LootLocations.AddRange(GetMonsterDropsFromTable(bodyContent));
-            lootData.LootPurchaseLocations = GetVendorPurchases(bodyContent);
-            return lootData;
+            return Task.Run(() =>
+            {
+                LootData = new LootData(lootName);
+                var body = document.DocumentNode.QuerySelector("div#bodyContent");
+                var bodyContent = body.QuerySelector("div.mw-content-ltr div.mw-parser-output");
+                LootData.LootLocations.AddRange(GetDutyDrops(bodyContent));
+                LootData.LootLocations.AddRange(GetMonsterDropsFromTable(bodyContent));
+                LootData.LootPurchaseLocations.AddRange(GetVendorPurchases(bodyContent));
+                return LootData;
+            });
         }
 
-        private static List<LootDrops> GetMonsterDrops(HtmlNode node)
+        private static IEnumerable<LootDrops> GetDutyDrops(HtmlNode node)
         {
             try
             {
-                var dropList = node.QuerySelector("ul").QuerySelectorAll("li");
-                var dropListSanitized = dropList.Select(el => el.InnerText).ToList();
-                return (from drop in dropListSanitized
-                        select drop.Split("-")
-                        into monsterNameAndLocation
-                        let flag = monsterNameAndLocation[1].Split("(")
-                        select new LootDrops
-                        {
-                            MobName = monsterNameAndLocation[0].TrimEnd().TrimStart(),
-                            MobLocation = flag[0].TrimEnd().TrimStart(),
-                            MobFlag = flag.Length > 1 ? $"({flag[1].Split(")")[0]})" : "N/A",
-                        })
-                   .ToList();
+                var dutyHeader = node.QuerySelector("h3");
+                if (dutyHeader is null || !dutyHeader.InnerText.Contains("dut", System.StringComparison.OrdinalIgnoreCase)) return Enumerable.Empty<LootDrops>();
+
+                var dutyList = node.QuerySelector("ul")?.QuerySelectorAll("li");
+                var dutyListSanitized = dutyList?.Select(el => el.InnerText).ToList();
+                if (dutyListSanitized is null) return Enumerable.Empty<LootDrops>();
+                
+                return dutyListSanitized.Select(duty => new LootDrops
+                {
+                    MobName = "Duty",
+                    MobLocation = Regex.Replace(duty, @"&#.+;", string.Empty),
+                    MobFlag = "N/A"
+                });
             }
-            catch (System.Exception e)
+            catch (System.Exception)
             {
-                PluginLog.Error($"Error mouting drop from list {e.Message}, {e.StackTrace}");
-                return new List<LootDrops>();
+                return Enumerable.Empty<LootDrops>();
             }
         }
 
@@ -50,43 +56,47 @@ namespace MonsterLootHunter.Helpers
             try
             {
                 var dropList = node.QuerySelector("table.item tbody").QuerySelectorAll("tr").ToList();
-                dropList.RemoveAt(0);
-                return (from vendorNode in dropList
-                    select vendorNode.QuerySelectorAll("td").ToList()
-                    into lootInformation
-                    let locationAndFlag = lootInformation.Last().InnerText.Split("(")
-                    let flag = locationAndFlag.Length > 1 ? $"({locationAndFlag[1]}" : string.Empty
-                    select new LootDrops { MobName = lootInformation[0].InnerText.Replace("\n", ""), MobLocation = locationAndFlag[0].Replace("\n", "").TrimEnd(), MobFlag = flag.Replace("\n", "") }).ToList();
-            }
-            catch (System.Exception e)
-            {
-                PluginLog.Error($"Error mouting drop from table {e.Message}, {e.StackTrace}");
-                return new List<LootDrops>();
-            }
-        }
+                if (!dropList.Any()) return Enumerable.Empty<LootDrops>();
 
-        private static List<LootPurchase> GetVendorPurchases(HtmlNode node)
-        {
-            try
-            {
-                var purchaseList = node.QuerySelector("table.npc tbody").QuerySelectorAll("tr").ToList();
-                purchaseList.RemoveAt(0);
-                return (from vendorNode in purchaseList
-                    select vendorNode.QuerySelectorAll("td").ToList()
-                    into purchaseInformation
-                    let locationAndFlag = purchaseInformation[1].InnerText.Split("(")
-                    select new LootPurchase
-                    {
-                        Vendor = purchaseInformation[0].InnerText.Replace("\n", ""),
-                        Location = locationAndFlag[0].Replace("\n", "").TrimEnd(),
-                        FlagPosition = $"({locationAndFlag[1]}".Replace("\n", ""),
-                        Cost = purchaseInformation[2].InnerText.Replace("&#160;", "").Replace("\n", ""),
-                        CostType = purchaseInformation[2].QuerySelector("span a").Attributes["title"].Value
-                    }).ToList();
+                dropList.RemoveAt(0);
+                return dropList.Select(vendorNode => vendorNode.QuerySelectorAll("td").ToList())
+                               .Select(lootInformation => new { lootInformation, locationAndFlag = lootInformation.Last().InnerText.Split("(") })
+                               .Select(extractedInfo => new { info = extractedInfo, flag = extractedInfo.locationAndFlag.Length > 1 ? $"({extractedInfo.locationAndFlag[1]}" : string.Empty })
+                               .Select(t => new LootDrops
+                                {
+                                    MobName = t.info.lootInformation[0].InnerText.Replace("\n", ""),
+                                    MobLocation = t.info.locationAndFlag[0].Replace("\n", "").TrimEnd(),
+                                    MobFlag = t.flag.Replace("\n", "")
+                                });
             }
             catch (System.Exception)
             {
-                return new List<LootPurchase>();
+                return Enumerable.Empty<LootDrops>();
+            }
+        }
+
+        private static IEnumerable<LootPurchase> GetVendorPurchases(HtmlNode node)
+        {
+            try
+            {
+                var purchaseList = node.QuerySelector("table.npc tbody")?.QuerySelectorAll("tr").ToList();
+                if (purchaseList is null || !purchaseList.Any()) return Enumerable.Empty<LootPurchase>();
+
+                purchaseList.RemoveAt(0);
+                return purchaseList.Select(vendorNode => vendorNode.QuerySelectorAll("td").ToList())
+                                   .Select(purchaseInformation => new { purchaseInformation, locationAndFlag = purchaseInformation[1].InnerText.Split("(") })
+                                   .Select(t => new LootPurchase
+                                    {
+                                        Vendor = t.purchaseInformation[0].InnerText.Replace("\n", ""),
+                                        Location = t.locationAndFlag[0].Replace("\n", "").TrimEnd(),
+                                        FlagPosition = $"({t.locationAndFlag[1]}".Replace("\n", ""),
+                                        Cost = t.purchaseInformation[2].InnerText.Replace("&#160;", "").Replace("\n", ""),
+                                        CostType = t.purchaseInformation[2].QuerySelector("span a").Attributes["title"].Value
+                                    });
+            }
+            catch (System.Exception)
+            {
+                return Enumerable.Empty<LootPurchase>();
             }
         }
     }
