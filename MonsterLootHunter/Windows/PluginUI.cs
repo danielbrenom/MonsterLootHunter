@@ -28,6 +28,7 @@ public class PluginUi : Window, System.IDisposable
     private LootData _lootData;
     private readonly float _scale;
     private readonly CancellationTokenSource _tokenSource;
+    private bool Loading { get; set; }
 
     #region Props
 
@@ -122,10 +123,9 @@ public class PluginUi : Window, System.IDisposable
 
                 ImGui.TreeNodeEx(item.Name + "##item" + item.RowId, nodeFlags);
 
-                if (ImGui.IsItemClicked())
-                {
-                    ChangeSelectedItem(item.RowId);
-                }
+                if (!ImGui.IsItemClicked()) continue;
+                Loading = true;
+                Task.Run(async () => await ChangeSelectedItem(item.RowId));
             }
 
             ImGui.Indent(ImGui.GetTreeNodeToLabelSpacing());
@@ -165,19 +165,31 @@ public class PluginUi : Window, System.IDisposable
             ImGui.SameLine();
             ImGui.SetCursorPosY(ImGui.GetCursorPosY() - ImGui.GetFontSize() / 2.0f + 19 * _scale);
             ImGui.Text(_selectedItem?.Name ?? string.Empty);
+            if (Loading)
+            {
+                ImGui.SameLine();
+                ImGui.SetCursorPosX(ImGui.GetCursorPosY() - ImGui.GetFontSize() / 2.0f + 350 * _scale);
+                ImGui.SetCursorPosY(ImGui.GetCursorPosY() - ImGui.GetFontSize() / 2.0f + 19 * _scale);
+                ImGui.Text("Loading data");
+                ImGui.SameLine();
+                ImGui.PushFont(UiBuilder.IconFont);
+                ImGui.SetCursorPosY(ImGui.GetCursorPosY() - ImGui.GetFontSize() / 2.0f + 19 * _scale);
+                ImGui.Text($"{(char)FontAwesomeIcon.Spinner}");
+                ImGui.PopFont();
+            }
 
-            #region Dropped By Table
+            #region Obtained From Table
 
             var tableHeight = ImGui.GetContentRegionAvail().Y / 2 - ImGui.GetTextLineHeightWithSpacing() * 2;
-            ImGui.Text("Dropped by");
-            ImGui.BeginChild("droppedBy", new Vector2(0.0f, tableHeight));
-            ImGui.Columns(4, "droppedByColumns");
+            ImGui.Text("Obtained From");
+            ImGui.BeginChild("obtainedFrom", new Vector2(0.0f, tableHeight));
+            ImGui.Columns(4, "obtainedFromColumns");
             ImGui.SetColumnWidth(0, 200.0f);
             ImGui.SetColumnWidth(1, 230.0f);
             ImGui.SetColumnWidth(2, 100.0f);
             ImGui.SetColumnWidth(3, 40.0f);
             ImGui.Separator();
-            ImGui.Text("Mob Name");
+            ImGui.Text("Name");
             ImGui.NextColumn();
             ImGui.Text("Location");
             ImGui.NextColumn();
@@ -188,6 +200,7 @@ public class PluginUi : Window, System.IDisposable
 
 
             var mobList = _lootData?.LootLocations.OrderBy(m => m.MobName).ToList();
+
             if (mobList != null && mobList.Any())
             {
                 foreach (var mob in mobList)
@@ -214,9 +227,11 @@ public class PluginUi : Window, System.IDisposable
             }
             else
             {
-                ImGui.Text("This probably isn't");
+                ImGui.Text("This probably isn't obtained");
                 ImGui.NextColumn();
-                ImGui.Text("obtained from mobs");
+                ImGui.Text("this way or the Wiki don't have");
+                ImGui.NextColumn();
+                ImGui.Text("this information");
             }
 
             ImGui.EndChild();
@@ -276,32 +291,33 @@ public class PluginUi : Window, System.IDisposable
         ImGui.EndChild();
     }
 
-    protected internal void ChangeSelectedItem(uint itemId)
+    protected internal async Task ChangeSelectedItem(uint itemId)
     {
         _selectedItem = _pluginServiceFactory.Create<ItemManagerService>().RetrieveItem(itemId);
         var iconId = _selectedItem.Icon;
         var iconTexFile = _pluginServiceFactory.Create<DataManager>().GetIcon(iconId);
         _selectedItemIcon?.Dispose();
         if (iconTexFile is not null)
-            _selectedItemIcon = _pluginServiceFactory.Create<DalamudPluginInterface>().UiBuilder
-                                                            .LoadImageRaw(iconTexFile.GetRgbaImageData(),
-                                                                          iconTexFile.Header.Width,
-                                                                          iconTexFile.Header.Height, 4);
-        Task.Run(async () =>
+            _selectedItemIcon = await _pluginServiceFactory.Create<DalamudPluginInterface>().UiBuilder
+                                                           .LoadImageRawAsync(iconTexFile.GetRgbaImageData(),
+                                                                              iconTexFile.Header.Width,
+                                                                              iconTexFile.Header.Height, 4);
+        try
         {
-            try
-            {
-                _lootData = default;
-                var token = _tokenSource.Token;
-                _lootData = await _pluginServiceFactory.Create<ScrapperClient>().GetLootData(_selectedItem.Name, token)
-                                                              .ConfigureAwait(false);
-                token.ThrowIfCancellationRequested();
-            }
-            catch (System.OperationCanceledException e)
-            {
-                PluginLog.Error(e, "Request for loot info failed", _selectedItem.Name);
-            }
-        });
+            _lootData = default;
+            var token = _tokenSource.Token;
+            _lootData = await _pluginServiceFactory.Create<ScrapperClient>().GetLootData(_selectedItem.Name, token)
+                                                   .ConfigureAwait(false);
+            token.ThrowIfCancellationRequested();
+        }
+        catch (System.OperationCanceledException e)
+        {
+            PluginLog.Error(e, "Request for loot $1 info failed", _selectedItem.Name);
+        }
+        finally
+        {
+            Loading = false;
+        }
     }
 
     public void Dispose()

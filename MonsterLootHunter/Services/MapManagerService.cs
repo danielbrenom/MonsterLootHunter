@@ -26,7 +26,8 @@ public class MapManagerService : IServiceType
     {
         try
         {
-            var location = CachedTerritories.FirstOrDefault(t => t.PlaceName.Value.Name.ToString().ToLowerInvariant().Contains(locationName.ToLowerInvariant()));
+            locationName = locationName.Contains('-') ? locationName.Split('-')[0] : locationName;
+            var location = CachedTerritories.FirstOrDefault(t => t.PlaceName.Value != null && t.PlaceName.Value.Name.ToString().ToLowerInvariant().Contains(locationName.ToLowerInvariant()));
             if (location is null) return;
             var coords = new float[2];
             coords[0] = float.Parse(position.Split(",")[0].Replace("(", "").Replace("x", ""), CultureInfo.InvariantCulture);

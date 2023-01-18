@@ -2,14 +2,13 @@
 using System.Linq;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
-using Dalamud;
 using Fizzler.Systems.HtmlAgilityPack;
 using HtmlAgilityPack;
 using MonsterLootHunter.Data;
 
 namespace MonsterLootHunter.Helpers
 {
-    public class ScrapperSanitizer : IServiceType
+    public class ScrapperSanitizer
     {
         private LootData LootData { get; set; }
 
@@ -22,6 +21,11 @@ namespace MonsterLootHunter.Helpers
                 var bodyContent = body.QuerySelector("div.mw-content-ltr div.mw-parser-output");
                 LootData.LootLocations.AddRange(GetDutyDrops(bodyContent));
                 LootData.LootLocations.AddRange(GetMonsterDropsFromTable(bodyContent));
+                LootData.LootLocations.AddRange(GetPossibleRecipe(bodyContent));
+                LootData.LootLocations.AddRange(GetPossibleTreasureHunts(bodyContent));
+                LootData.LootLocations.AddRange(GetPossibleDesynthesis(bodyContent));
+                LootData.LootLocations.AddRange(GetPossibleGathering(bodyContent));
+                LootData.LootLocations.AddRange(GetPossibleGatheringTable(bodyContent));
                 LootData.LootPurchaseLocations.AddRange(GetVendorPurchases(bodyContent));
                 return LootData;
             });
@@ -31,13 +35,13 @@ namespace MonsterLootHunter.Helpers
         {
             try
             {
-                var dutyHeader = node.QuerySelector("h3");
+                var dutyHeader = node.QuerySelector("h3").QuerySelector("span#Duties");
                 if (dutyHeader is null || !dutyHeader.InnerText.Contains("dut", System.StringComparison.OrdinalIgnoreCase)) return Enumerable.Empty<LootDrops>();
 
                 var dutyList = node.QuerySelector("ul")?.QuerySelectorAll("li");
                 var dutyListSanitized = dutyList?.Select(el => el.InnerText).ToList();
                 if (dutyListSanitized is null) return Enumerable.Empty<LootDrops>();
-                
+
                 return dutyListSanitized.Select(duty => new LootDrops
                 {
                     MobName = "Duty",
@@ -79,6 +83,9 @@ namespace MonsterLootHunter.Helpers
         {
             try
             {
+                var purchaseHeader = node.QuerySelectorAll("h3").ToList();
+                if (purchaseHeader.All(n => n.QuerySelector("span#Purchase") is null))
+                    return Enumerable.Empty<LootPurchase>();
                 var purchaseList = node.QuerySelector("table.npc tbody")?.QuerySelectorAll("tr").ToList();
                 if (purchaseList is null || !purchaseList.Any()) return Enumerable.Empty<LootPurchase>();
 
@@ -97,6 +104,157 @@ namespace MonsterLootHunter.Helpers
             catch (System.Exception)
             {
                 return Enumerable.Empty<LootPurchase>();
+            }
+        }
+
+        private static IEnumerable<LootDrops> GetPossibleRecipe(HtmlNode node)
+        {
+            try
+            {
+                var recipeBox = node.QuerySelector("div.recipe-box");
+                if (recipeBox is null) return Enumerable.Empty<LootDrops>();
+
+                var recipeData = recipeBox.QuerySelector("div.wrapper").QuerySelectorAll("dd").ToList();
+                return new[]
+                {
+                    new LootDrops
+                    {
+                        MobName = $"Crafter Class: {recipeData[2].QuerySelectorAll("a").ToList()[1].InnerText}",
+                        MobLocation = $"Recipe Lvl: {recipeData[3].InnerText}",
+                        MobFlag = string.Empty
+                    }
+                };
+            }
+            catch (System.Exception)
+            {
+                return Enumerable.Empty<LootDrops>();
+            }
+        }
+
+        private static IEnumerable<LootDrops> GetPossibleTreasureHunts(HtmlNode node)
+        {
+            try
+            {
+                var pageHeaders = node.QuerySelectorAll("h3").ToList();
+                if (pageHeaders.All(hNode => hNode.QuerySelector("span#Treasure_Hunt") is null)) return Enumerable.Empty<LootDrops>();
+
+                var treasureHeader = pageHeaders.First(hNode => hNode.QuerySelector("span#Treasure_Hunt") is not null);
+                var treasureMapList = treasureHeader.NextSibling.NextSibling.QuerySelectorAll("li");
+
+                return treasureMapList.Select(treasureMap => new LootDrops
+                {
+                    MobName = "Treasure Map",
+                    MobLocation = treasureMap.QuerySelectorAll("a").ToList().Last().InnerText, MobFlag = string.Empty
+                });
+            }
+            catch (System.Exception)
+            {
+                return Enumerable.Empty<LootDrops>();
+            }
+        }
+
+        private static IEnumerable<LootDrops> GetPossibleDesynthesis(HtmlNode node)
+        {
+            try
+            {
+                var pageHeaders = node.QuerySelectorAll("h3").ToList();
+                if (pageHeaders.All(hNode => hNode.QuerySelector("span#Desynthesis") is null &&
+                                             hNode.QuerySelector("span#_Desynthesis") is null)) return Enumerable.Empty<LootDrops>();
+
+                var desynthesisHeader = pageHeaders.First(hNode => hNode.QuerySelector("span#Desynthesis") is not null ||
+                                                                   hNode.QuerySelector("span#_Desynthesis") is not null);
+                var desynthesisList = desynthesisHeader.NextSibling.NextSibling.QuerySelectorAll("li");
+                return desynthesisList.Select(treasureMap => new LootDrops
+                {
+                    MobName = "Desynthesis",
+                    MobLocation = treasureMap.QuerySelectorAll("a").ToList().Last().InnerText,
+                    MobFlag = string.Empty
+                });
+            }
+            catch (System.Exception)
+            {
+                return Enumerable.Empty<LootDrops>();
+            }
+        }
+
+        private static IEnumerable<LootDrops> GetPossibleGathering(HtmlNode node)
+        {
+            try
+            {
+                var pageHeaders = node.QuerySelectorAll("h3").ToList();
+                if (pageHeaders.All(hNode => hNode.QuerySelector("span#Gathering") is null &&
+                                             hNode.QuerySelector("span#Gathered") is null)) return Enumerable.Empty<LootDrops>();
+
+                var gatherHeader = pageHeaders.First(hNode => hNode.QuerySelector("span#Gathering") is not null ||
+                                                              hNode.QuerySelector("span#Gathered") is not null);
+                var gatherList = gatherHeader.NextSibling.NextSibling.QuerySelectorAll("li").ToList();
+                if (gatherList.Any())
+                    return Gathering(gatherList);
+                var gatherableInfo = gatherHeader.NextSibling.NextSibling;
+                return gatherableInfo is not null ? Gathered(gatherableInfo) : Enumerable.Empty<LootDrops>();
+
+                IEnumerable<LootDrops> Gathered(HtmlNode gatheredNode)
+                {
+                    var anchors = gatheredNode.QuerySelectorAll("a").ToList();
+                    var flag = anchors.LastOrDefault()?.NextSibling.InnerText ?? string.Empty;
+                    var flagParsed = Regex.Matches(flag, @"(\d+\.?\d*)");
+                    var gatherTime = gatheredNode.ChildNodes.LastOrDefault()?.InnerText.Replace("\n", string.Empty);
+                    return new[]
+                    {
+                        new LootDrops
+                        {
+                            MobName = $"{gatheredNode.ChildNodes.First().InnerText[..^2]} {anchors.First().InnerText}",
+                            MobLocation = $"{anchors[1].InnerText}-{anchors.Last().InnerText}-{gatherTime}",
+                            MobFlag = $"({flagParsed[0].Value},{flagParsed[1].Value})"
+                        }
+                    };
+                }
+
+                IEnumerable<LootDrops> Gathering(IEnumerable<HtmlNode> gatheringList)
+                {
+                    return from gatherNode in gatheringList
+                        let anchors = gatherNode.QuerySelectorAll("a").ToList()
+                        let flag = anchors.LastOrDefault()?.NextSibling.InnerText ?? string.Empty
+                        let flagParsed = Regex.Matches(flag, @"(\d+\.?\d*)")
+                        select new LootDrops
+                        {
+                            MobName = $"{gatherNode.ChildNodes.First().InnerText}{anchors.First().InnerText}",
+                            MobLocation = $"{anchors[1].InnerText}-{anchors.Last().InnerText}",
+                            MobFlag = $"({flagParsed[0].Value},{flagParsed[1].Value})"
+                        };
+                }
+            }
+            catch (System.Exception)
+            {
+                return Enumerable.Empty<LootDrops>();
+            }
+        }
+
+        private static IEnumerable<LootDrops> GetPossibleGatheringTable(HtmlNode node)
+        {
+            try
+            {
+                var gatheringTable = node.QuerySelector("table.gathering-role");
+                if (gatheringTable is null) return Enumerable.Empty<LootDrops>();
+
+
+                var gatheringList = gatheringTable.QuerySelector("tbody").QuerySelectorAll("tr").ToList();
+                gatheringList.RemoveAt(0);
+
+                return (from gatherNode in gatheringList
+                    select gatherNode.QuerySelectorAll("td").ToList()
+                    into columns
+                    let flagNumbers = Regex.Matches(columns.Last().InnerText, @"(\d+\.?\d*)")
+                    select new LootDrops
+                    {
+                        MobName = columns[0].ChildNodes[1].InnerText,
+                        MobLocation = columns[1].QuerySelector("a").InnerText,
+                        MobFlag = $"({flagNumbers[0].Value},{flagNumbers[1].Value})"
+                    }).ToList();
+            }
+            catch (System.Exception)
+            {
+                return Enumerable.Empty<LootDrops>();
             }
         }
     }

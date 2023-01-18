@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Threading.Tasks;
 using Dalamud;
 using Dalamud.ContextMenu;
 using Dalamud.Game.Text.SeStringHandling;
@@ -48,7 +49,7 @@ public class ContextMenu : IServiceType, IDisposable
         return new InventoryContextMenuItem(SearchString, _ =>
         {
             window.IsOpen = true;
-            window.ChangeSelectedItem(itemId);
+            Task.Run(async () => await window.ChangeSelectedItem(itemId));
         }, true);
     }
 
