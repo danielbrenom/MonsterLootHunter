@@ -46,7 +46,7 @@ namespace MonsterLootHunter.Helpers
                 {
                     MobName = "Duty",
                     MobLocation = Regex.Replace(duty, @"&#.+;", string.Empty),
-                    MobFlag = "N/A"
+                    MobFlag = string.Empty
                 });
             }
             catch (System.Exception)
@@ -241,7 +241,7 @@ namespace MonsterLootHunter.Helpers
                 var gatheringList = gatheringTable.QuerySelector("tbody").QuerySelectorAll("tr").ToList();
                 gatheringList.RemoveAt(0);
 
-                return (from gatherNode in gatheringList
+                return from gatherNode in gatheringList
                     select gatherNode.QuerySelectorAll("td").ToList()
                     into columns
                     let flagNumbers = Regex.Matches(columns.Last().InnerText, @"(\d+\.?\d*)")
@@ -250,7 +250,7 @@ namespace MonsterLootHunter.Helpers
                         MobName = columns[0].ChildNodes[1].InnerText,
                         MobLocation = columns[1].QuerySelector("a").InnerText,
                         MobFlag = $"({flagNumbers[0].Value},{flagNumbers[1].Value})"
-                    }).ToList();
+                    };
             }
             catch (System.Exception)
             {
