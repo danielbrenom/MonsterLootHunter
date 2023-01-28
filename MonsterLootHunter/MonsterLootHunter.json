@@ -5,8 +5,8 @@
   "Description": "Search for specific loot from monsters and NPCs and their location.",
   "InternalName": "monsterLootHunter",
   "ApplicableVersion": "any",
-  "Changelog": "- Cloth category added\n- Removed deprecated extraction\n- Duty drops added\n- Simple information for recipes, treasure maps, desynthesis and gathering\n- Plugin overhaul",
-  "AssemblyVersion": "1.0.8",
+  "Changelog": "- Removed material listing limitations\n- More context menu support",
+  "AssemblyVersion": "1.0.9",
   "RepoUrl": "https://github.com/danielbrenom/MonsterLootHunter",
   "DalamudApiLevel": 8,
   "Tags": [
