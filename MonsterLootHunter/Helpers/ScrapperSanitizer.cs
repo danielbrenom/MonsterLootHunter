@@ -8,27 +8,27 @@ using MonsterLootHunter.Data;
 
 namespace MonsterLootHunter.Helpers
 {
-    public class ScrapperSanitizer
+    public partial class ScrapperSanitizer
     {
         private LootData LootData { get; set; }
 
+        [GeneratedRegex("(\\d+\\.?\\d*)")]
+        private static partial Regex CoordinatesRegex();
+
         public Task<LootData> ParseResponse(HtmlDocument document, string lootName)
         {
-            return Task.Run(() =>
-            {
-                LootData = new LootData(lootName);
-                var body = document.DocumentNode.QuerySelector("div#bodyContent");
-                var bodyContent = body.QuerySelector("div.mw-content-ltr div.mw-parser-output");
-                LootData.LootLocations.AddRange(GetDutyDrops(bodyContent));
-                LootData.LootLocations.AddRange(GetMonsterDropsFromTable(bodyContent));
-                LootData.LootLocations.AddRange(GetPossibleRecipe(bodyContent));
-                LootData.LootLocations.AddRange(GetPossibleTreasureHunts(bodyContent));
-                LootData.LootLocations.AddRange(GetPossibleDesynthesis(bodyContent));
-                LootData.LootLocations.AddRange(GetPossibleGathering(bodyContent));
-                LootData.LootLocations.AddRange(GetPossibleGatheringTable(bodyContent));
-                LootData.LootPurchaseLocations.AddRange(GetVendorPurchases(bodyContent));
-                return LootData;
-            });
+            LootData = new LootData(lootName);
+            var body = document.DocumentNode.QuerySelector("div#bodyContent");
+            var bodyContent = body.QuerySelector("div.mw-content-ltr div.mw-parser-output");
+            LootData.LootLocations.AddRange(GetDutyDrops(bodyContent));
+            LootData.LootLocations.AddRange(GetMonsterDropsFromTable(bodyContent));
+            LootData.LootLocations.AddRange(GetPossibleRecipe(bodyContent));
+            LootData.LootLocations.AddRange(GetPossibleTreasureHunts(bodyContent));
+            LootData.LootLocations.AddRange(GetPossibleDesynthesis(bodyContent));
+            LootData.LootLocations.AddRange(GetPossibleGathering(bodyContent));
+            LootData.LootLocations.AddRange(GetPossibleGatheringTable(bodyContent));
+            LootData.LootPurchaseLocations.AddRange(GetVendorPurchases(bodyContent));
+            return Task.FromResult(LootData);
         }
 
         private static IEnumerable<LootDrops> GetDutyDrops(HtmlNode node)
@@ -197,7 +197,7 @@ namespace MonsterLootHunter.Helpers
                 {
                     var anchors = gatheredNode.QuerySelectorAll("a").ToList();
                     var flag = anchors.LastOrDefault()?.NextSibling.InnerText ?? string.Empty;
-                    var flagParsed = Regex.Matches(flag, @"(\d+\.?\d*)");
+                    var flagParsed = CoordinatesRegex().Matches(flag);
                     var gatherTime = gatheredNode.ChildNodes.LastOrDefault()?.InnerText.Replace("\n", string.Empty);
                     return new[]
                     {
@@ -244,7 +244,7 @@ namespace MonsterLootHunter.Helpers
                 return from gatherNode in gatheringList
                     select gatherNode.QuerySelectorAll("td").ToList()
                     into columns
-                    let flagNumbers = Regex.Matches(columns.Last().InnerText, @"(\d+\.?\d*)")
+                    let flagNumbers = CoordinatesRegex().Matches(columns.Last().InnerText)
                     select new LootDrops
                     {
                         MobName = columns[0].ChildNodes[1].InnerText,

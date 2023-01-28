@@ -60,15 +60,7 @@ public class ItemManagerService : IServiceType
                 switch (c.Name)
                 {
                     case LootIdentifierConstants.Leather:
-                        sortedCategoriesDict.Add(c, _items.Where(i => i.ItemSearchCategory.Row == c.RowId)
-                                                          .Where(i => LootIdentifierConstants.LeatherRegex.IsMatch(i.Name) && !LootIdentifierConstants.ExclusionRegex.IsMatch(i.Name))
-                                                          .OrderBy(i => i.Name.ToString()).ToList());
-                        break;
                     case LootIdentifierConstants.Cloth:
-                        sortedCategoriesDict.Add(c, _items.Where(i => i.ItemSearchCategory.Row == c.RowId)
-                                                          .Where(i => !LootIdentifierConstants.ClothExclusionRegex.IsMatch(i.Name) && !LootIdentifierConstants.ExclusionRegex.IsMatch(i.Name))
-                                                          .OrderBy(i => i.Name.ToString()).ToList());
-                        break;
                     case LootIdentifierConstants.Reagents:
                     case LootIdentifierConstants.Bone:
                     case LootIdentifierConstants.Ingredients:
