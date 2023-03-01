@@ -1,12 +1,12 @@
 {
-  "Author": "Daniel Guiomarino",
+  "Author": "Sylf",
   "Name": "Monster Loot Hunter",
   "Punchline": "A monster loot finder plugin.",
-  "Description": "Search for specific loot from monsters and NPCs and their location.",
+  "Description": "Check where you can obtain a material from monsters, duties, crafting, gathering or where they can be bought from NPCs.",
   "InternalName": "monsterLootHunter",
   "ApplicableVersion": "any",
-  "Changelog": "- Removed material listing limitations\n- More context menu support",
-  "AssemblyVersion": "1.0.9",
+  "Changelog": "- Added metal and stone materials\n- Internal plugin update",
+  "AssemblyVersion": "1.0.10",
   "RepoUrl": "https://github.com/danielbrenom/MonsterLootHunter",
   "DalamudApiLevel": 8,
   "Tags": [

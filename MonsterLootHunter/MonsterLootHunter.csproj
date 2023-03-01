@@ -1,8 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk">
     <PropertyGroup>
-        <Authors>Daniel Guiomarino</Authors>
+        <Authors>Sylf</Authors>
         <Company>Guiomarino Dev</Company>
-        <Version>1.0.9</Version>
+        <Version>1.0.10</Version>
         <Description>A monster loot finder plugin.</Description>
         <Copyright>Daniel Guiomarino</Copyright>
         <PackageProjectUrl>https://github.com/danielbrenom/MonsterLootHunter</PackageProjectUrl>
@@ -14,9 +14,9 @@
         <ProduceReferenceAssembly>false</ProduceReferenceAssembly>
         <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
         <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
-        <AssemblyVersion>1.0.9</AssemblyVersion>
-        <FileVersion>1.0.9</FileVersion>
-        <PackageVersion>1.0.9</PackageVersion>
+        <AssemblyVersion>1.0.10</AssemblyVersion>
+        <FileVersion>1.0.10</FileVersion>
+        <PackageVersion>1.0.10</PackageVersion>
         <RestorePackagesWithLockFile>true</RestorePackagesWithLockFile>
     </PropertyGroup>
     <PropertyGroup>

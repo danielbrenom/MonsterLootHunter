@@ -10,6 +10,8 @@ namespace MonsterLootHunter.Utils
         public const string Bone = "Bone";
         public const string Ingredients = "Ingredients";
         public const string Cloth = "Cloth";
+        public const string Stone = "Stone";
+        public const string Metal = "Metal";
 
         private static readonly string[] ExclusionSuffixes = { "approved", "grade", "enchanted" };
         private static readonly string ExclusionPattern = string.Join("|", ExclusionSuffixes.Select(Regex.Escape));

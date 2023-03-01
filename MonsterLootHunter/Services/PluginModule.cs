@@ -1,5 +1,4 @@
-﻿
-using MonsterLootHunter.Helpers;
+﻿using MonsterLootHunter.Helpers;
 using MonsterLootHunter.Logic;
 
 namespace MonsterLootHunter.Services;

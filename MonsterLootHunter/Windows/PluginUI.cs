@@ -42,15 +42,9 @@ public class PluginUi : Window, System.IDisposable
 
     private string _lastSearchString = string.Empty;
 
-    public string LastSearchString
-    {
-        get => _lastSearchString;
-        set => _lastSearchString = value;
-    }
-
     #endregion
 
-    public PluginUi(PluginServiceFactory serviceFactory) : base(PluginConstants.MainWindowName, ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoScrollWithMouse)
+    public PluginUi(PluginServiceFactory serviceFactory) : base(WindowConstants.MainWindowName, ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoScrollWithMouse)
     {
         _pluginServiceFactory = serviceFactory;
         _selectedItem = new Item();
@@ -141,7 +135,7 @@ public class PluginUi : Window, System.IDisposable
         ImGui.PushFont(UiBuilder.IconFont);
         if (ImGui.Button($"{(char)FontAwesomeIcon.Cog}"))
         {
-            var pluginWindow = _pluginServiceFactory.Create<WindowSystem>().GetWindow(PluginConstants.ConfigWindowName);
+            var pluginWindow = _pluginServiceFactory.Create<WindowService>().GetWindow(WindowConstants.ConfigWindowName);
             if (pluginWindow is not ConfigWindow window) return;
             window.IsOpen = true;
         }

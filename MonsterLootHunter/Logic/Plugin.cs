@@ -2,7 +2,6 @@
 using Dalamud.Data;
 using Dalamud.Game.Command;
 using Dalamud.Game.Gui;
-using Dalamud.Interface.Windowing;
 using Dalamud.IoC;
 using Dalamud.Plugin;
 using Dalamud.Utility;
@@ -18,8 +17,8 @@ public class Plugin : IDalamudPlugin
 
     private DalamudPluginInterface PluginInterface { get; init; }
     private CommandManager CommandManager { get; init; }
-    private readonly WindowSystem _windowSystem = new(PluginConstants.WindowSystemNamespace);
     private readonly PluginServiceFactory _pluginServiceFactory;
+    private readonly WindowService _windowService;
 
     public Plugin(
         [RequiredVersion("1.0")] DalamudPluginInterface pluginInterface,
@@ -31,16 +30,18 @@ public class Plugin : IDalamudPlugin
         CommandManager = commandManager;
         var configuration = (Configuration)PluginInterface.GetPluginConfig() ?? new Configuration();
         configuration.Initialize(pluginInterface);
+        _windowService = new WindowService(new(WindowConstants.WindowSystemNamespace));
         _pluginServiceFactory = new PluginServiceFactory().RegisterService(pluginInterface)
-                                                          .RegisterService(_windowSystem)
+                                                          .RegisterService(_windowService)
                                                           .RegisterService(configuration)
                                                           .RegisterService(dataManager)
                                                           .RegisterService(gameGui);
         _pluginServiceFactory.RegisterService(_pluginServiceFactory);
         new PluginModule().Register(_pluginServiceFactory);
 
-        _windowSystem.AddWindow(new ConfigWindow(_pluginServiceFactory));
-        _windowSystem.AddWindow(new PluginUi(_pluginServiceFactory));
+        
+        _windowService.RegisterWindow(new ConfigWindow(_pluginServiceFactory), WindowConstants.ConfigWindowName);
+        _windowService.RegisterWindow(new PluginUi(_pluginServiceFactory), WindowConstants.MainWindowName);
 
         CommandManager.AddHandler(PluginConstants.CommandSlash, new CommandInfo(OnCommand)
         {
@@ -58,7 +59,7 @@ public class Plugin : IDalamudPlugin
 
     private void OnCommand(string command, string args)
     {
-        var pluginWindow = _windowSystem.GetWindow(PluginConstants.MainWindowName);
+        var pluginWindow = _windowService.GetWindow(WindowConstants.MainWindowName);
         if (pluginWindow is not PluginUi window) return;
         pluginWindow.IsOpen = true;
         window.SearchString = !args.IsNullOrEmpty() ? args : string.Empty;
@@ -66,12 +67,12 @@ public class Plugin : IDalamudPlugin
 
     private void DrawUi()
     {
-        _windowSystem.Draw();
+        _windowService.Draw();
     }
 
     private void DrawConfigUi()
     {
-        var pluginWindow = _windowSystem.GetWindow(PluginConstants.ConfigWindowName);
+        var pluginWindow = _windowService.GetWindow(WindowConstants.ConfigWindowName);
         if (pluginWindow is not ConfigWindow window) return;
         window.IsOpen = true;
     }
@@ -82,7 +83,7 @@ public class Plugin : IDalamudPlugin
         _pluginServiceFactory.Dispose();
         CommandManager.RemoveHandler(PluginConstants.CommandSlash);
         CommandManager.RemoveHandler(PluginConstants.ShortCommandSlash);
-        _windowSystem.RemoveAllWindows();
+        _windowService.Unregister();
         GC.SuppressFinalize(this);
     }
 }

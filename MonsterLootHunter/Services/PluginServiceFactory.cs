@@ -54,7 +54,7 @@ public class PluginServiceFactory
             }
             catch (ArgumentException)
             {
-                //Non disposable services should not interefere
+                //Non disposable services should not interfere
             }
         }
     }

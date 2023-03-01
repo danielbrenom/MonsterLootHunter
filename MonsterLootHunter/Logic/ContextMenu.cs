@@ -5,7 +5,6 @@ using Dalamud.ContextMenu;
 using Dalamud.Game.Gui;
 using Dalamud.Game.Text.SeStringHandling;
 using Dalamud.Game.Text.SeStringHandling.Payloads;
-using Dalamud.Interface.Windowing;
 using MonsterLootHunter.Services;
 using MonsterLootHunter.Utils;
 using MonsterLootHunter.Windows;
@@ -63,7 +62,7 @@ public class ContextMenu : IServiceType, IDisposable
 
     private InventoryContextMenuItem CheckItem(uint itemId)
     {
-        var pluginWindow = _pluginServiceFactory.Create<WindowSystem>().GetWindow(PluginConstants.MainWindowName);
+        var pluginWindow = _pluginServiceFactory.Create<WindowService>().GetWindow(WindowConstants.MainWindowName);
         if (pluginWindow is not PluginUi window) return null;
         itemId = itemId > 500000 ? itemId - 500000 : itemId;
         if (!_pluginServiceFactory.Create<ItemManagerService>().CheckSelectedItem(itemId)) return null;
@@ -84,7 +83,7 @@ public class ContextMenu : IServiceType, IDisposable
 
     private GameObjectContextMenuItem CheckGameObjectItem(uint itemId)
     {
-        var pluginWindow = _pluginServiceFactory.Create<WindowSystem>().GetWindow(PluginConstants.MainWindowName);
+        var pluginWindow = _pluginServiceFactory.Create<WindowService>().GetWindow(WindowConstants.MainWindowName);
         if (pluginWindow is not PluginUi window) return null;
         itemId = itemId > 500000 ? itemId - 500000 : itemId;
         if (!_pluginServiceFactory.Create<ItemManagerService>().CheckSelectedItem(itemId)) return null;

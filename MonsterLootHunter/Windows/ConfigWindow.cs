@@ -14,7 +14,7 @@ public class ConfigWindow : Window, IDisposable
     private readonly float _scale;
     private bool _contextIntegration;
 
-    public ConfigWindow(PluginServiceFactory serviceFactoryFactory) : base(PluginConstants.ConfigWindowName, ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoScrollWithMouse)
+    public ConfigWindow(PluginServiceFactory serviceFactoryFactory) : base(WindowConstants.ConfigWindowName, ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoScrollWithMouse)
     {
         _pluginServiceFactoryFactory = serviceFactoryFactory;
         _scale = ImGui.GetIO().FontGlobalScale;

@@ -64,6 +64,8 @@ public class ItemManagerService : IServiceType
                     case LootIdentifierConstants.Reagents:
                     case LootIdentifierConstants.Bone:
                     case LootIdentifierConstants.Ingredients:
+                    case LootIdentifierConstants.Stone:
+                    case LootIdentifierConstants.Metal:
                         sortedCategoriesDict.Add(c, _items.Where(i => i.ItemSearchCategory.Row == c.RowId)
                                                           .Where(i => !LootIdentifierConstants.ExclusionRegex.IsMatch(i.Name))
                                                           .OrderBy(i => i.Name.ToString()).ToList());
