@@ -84,7 +84,7 @@ namespace MonsterLootHunter.Helpers
             try
             {
                 var purchaseHeader = node.QuerySelectorAll("h3").ToList();
-                if (purchaseHeader.All(n => n.QuerySelector("span#Purchase") is null))
+                if (!purchaseHeader.Any(n => n.QuerySelector("span#Purchase") != null || n.QuerySelector("span#Purchased_From") != null))
                     return Enumerable.Empty<LootPurchase>();
                 var purchaseList = node.QuerySelector("table.npc tbody")?.QuerySelectorAll("tr").ToList();
                 if (purchaseList is null || !purchaseList.Any()) return Enumerable.Empty<LootPurchase>();

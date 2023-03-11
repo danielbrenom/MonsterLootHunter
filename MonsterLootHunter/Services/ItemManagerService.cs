@@ -26,12 +26,12 @@ public class ItemManagerService : IServiceType
     public bool CheckSelectedItem(uint itemId)
     {
         var foundItem = RetrieveItem(itemId);
-        return CachedList.Any(pair => pair.Value.Any(item => item.RowId == foundItem.RowId));
+        return foundItem is not null && CachedList.Any(pair => pair.Value.Any(item => item.RowId == foundItem.RowId));
     }
 
     public Item RetrieveItem(uint itemId)
     {
-        return _items.Single(i => i.RowId == itemId);
+        return _items.SingleOrDefault(i => i.RowId == itemId);
     }
 
     public (List<KeyValuePair<ItemSearchCategory, List<Item>>>, string) GetEnumerableItems(string nameSearched, bool shouldPerformSearch)

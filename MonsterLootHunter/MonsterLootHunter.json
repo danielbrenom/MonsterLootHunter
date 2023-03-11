@@ -1,7 +1,7 @@
 {
   "Author": "Sylf",
   "Name": "Monster Loot Hunter",
-  "Punchline": "A monster loot finder plugin.",
+  "Punchline": "What to check where you can obtain materials? This is the plugin for you!",
   "Description": "Check where you can obtain a material from monsters, duties, crafting, gathering or where they can be bought from NPCs.",
   "InternalName": "monsterLootHunter",
   "ApplicableVersion": "any",
