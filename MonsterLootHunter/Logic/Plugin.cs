@@ -39,7 +39,7 @@ public class Plugin : IDalamudPlugin
         _pluginServiceFactory.RegisterService(_pluginServiceFactory);
         new PluginModule().Register(_pluginServiceFactory);
 
-        
+
         _windowService.RegisterWindow(new ConfigWindow(_pluginServiceFactory), WindowConstants.ConfigWindowName);
         _windowService.RegisterWindow(new PluginUi(_pluginServiceFactory), WindowConstants.MainWindowName);
 

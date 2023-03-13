@@ -174,23 +174,25 @@ public class PluginUi : Window, System.IDisposable
 
             #region Obtained From Table
 
-            var tableHeight = ImGui.GetContentRegionAvail().Y / 2 - ImGui.GetTextLineHeightWithSpacing() * 2;
             ImGui.Text("Obtained From");
-            ImGui.BeginChild("obtainedFrom", new Vector2(0.0f, tableHeight));
-            ImGui.Columns(4, "obtainedFromColumns");
-            ImGui.SetColumnWidth(0, 200.0f);
-            ImGui.SetColumnWidth(1, 230.0f);
-            ImGui.SetColumnWidth(2, 100.0f);
-            ImGui.SetColumnWidth(3, 40.0f);
-            ImGui.Separator();
+            ImGui.BeginTable("obtainedFrom", 4, ImGuiTableFlags.ScrollY | ImGuiTableFlags.RowBg | ImGuiTableFlags.Borders | ImGuiTableFlags.NoHostExtendX,
+                             new Vector2(0f, itemTextSize.Y * 13));
+
+            ImGui.TableSetupScrollFreeze(0, 1);
+            ImGui.TableSetupColumn("name", ImGuiTableColumnFlags.WidthFixed, 200.0f);
+            ImGui.TableSetupColumn("location", ImGuiTableColumnFlags.WidthFixed, 230.0f);
+            ImGui.TableSetupColumn("position", ImGuiTableColumnFlags.WidthFixed, 100.0f);
+            ImGui.TableSetupColumn("actions", ImGuiTableColumnFlags.WidthFixed, 40.0f);
+
+            ImGui.TableNextRow();
+            ImGui.AlignTextToFramePadding();
+            ImGui.TableNextColumn();
+
             ImGui.Text("Name");
-            ImGui.NextColumn();
+            ImGui.TableNextColumn();
             ImGui.Text("Location");
-            ImGui.NextColumn();
+            ImGui.TableNextColumn();
             ImGui.Text("Position");
-            ImGui.NextColumn();
-            ImGui.NextColumn();
-            ImGui.Separator();
 
 
             var mobList = _lootData?.LootLocations.OrderBy(m => m.MobName).ToList();
@@ -200,35 +202,40 @@ public class PluginUi : Window, System.IDisposable
                 foreach (var mob in mobList)
                 {
                     var index = mobList.IndexOf(mob);
+                    ImGui.TableNextRow(ImGuiTableRowFlags.None, itemTextSize.Y * 1.5f);
+                    ImGui.AlignTextToFramePadding();
+                    ImGui.TableNextColumn();
                     ImGui.Text(mob.MobName);
-                    ImGui.NextColumn();
+                    ImGui.TableNextColumn();
                     ImGui.Text(mob.MobLocation);
-                    ImGui.NextColumn();
+                    ImGui.TableNextColumn();
                     ImGui.Text(mob.MobFlag);
-                    ImGui.NextColumn();
+                    ImGui.TableNextColumn();
                     if (!string.IsNullOrEmpty(mob.MobFlag) && mob.MobFlag != "N/A")
                     {
                         ImGui.PushFont(UiBuilder.IconFont);
-                        if (ImGui.Button($"{(char)FontAwesomeIcon.MapMarkerAlt}##listing{index}", new Vector2(25 * _scale, ImGui.GetItemRectSize().Y * _scale)))
+                        if (ImGui.Button($"{(char)FontAwesomeIcon.MapMarkerAlt}##listing{index}", new Vector2(25 * _scale, itemTextSize.Y * _scale * 1.5f)))
                             _pluginServiceFactory.Create<MapManagerService>().MarkMapFlag(mob.MobLocation, mob.MobFlag);
 
                         ImGui.PopFont();
                     }
 
-                    ImGui.NextColumn();
-                    ImGui.Separator();
+                    ImGui.TableNextColumn();
                 }
             }
             else
             {
+                ImGui.TableNextRow();
+                ImGui.AlignTextToFramePadding();
+                ImGui.TableNextColumn();
                 ImGui.Text("This probably isn't obtained");
-                ImGui.NextColumn();
+                ImGui.TableNextColumn();
                 ImGui.Text("this way or the Wiki don't have");
-                ImGui.NextColumn();
+                ImGui.TableNextColumn();
                 ImGui.Text("this information");
             }
 
-            ImGui.EndChild();
+            ImGui.EndTable();
             ImGui.Separator();
 
             #endregion
@@ -236,45 +243,56 @@ public class PluginUi : Window, System.IDisposable
             #region Purchased From Table
 
             ImGui.Text("Purchased From");
-            ImGui.BeginChild("purchasedFrom", new Vector2(0.0f, tableHeight));
-            ImGui.Columns(4, "purchasedFromColumns");
-            ImGui.SetColumnWidth(2, 100.0f);
-            ImGui.Separator();
+            ImGui.BeginTable("purchasedFrom", 4, ImGuiTableFlags.ScrollY | ImGuiTableFlags.RowBg | ImGuiTableFlags.Borders | ImGuiTableFlags.NoHostExtendX,
+                             new Vector2(0f, itemTextSize.Y * 13));
+            ImGui.TableSetupScrollFreeze(0, 1);
+            ImGui.TableSetupColumn("vendor", ImGuiTableColumnFlags.WidthFixed, 200f);
+            ImGui.TableSetupColumn("location", ImGuiTableColumnFlags.WidthFixed, 150f);
+            ImGui.TableSetupColumn("position", ImGuiTableColumnFlags.WidthFixed, 100f);
+            ImGui.TableSetupColumn("price", ImGuiTableColumnFlags.WidthFixed, 200f);
+
+            ImGui.TableNextRow();
+
+            ImGui.AlignTextToFramePadding();
+            ImGui.TableNextColumn();
             ImGui.Text("Vendor");
-            ImGui.NextColumn();
+            ImGui.TableNextColumn();
             ImGui.Text("Location");
-            ImGui.NextColumn();
+            ImGui.TableNextColumn();
             ImGui.Text("Position");
-            ImGui.NextColumn();
+            ImGui.TableNextColumn();
             ImGui.Text("Price");
-            ImGui.NextColumn();
-            ImGui.Separator();
+            ImGui.TableNextColumn();
 
             var vendorList = _lootData?.LootPurchaseLocations.OrderBy(v => v.Vendor).ToList();
             if (vendorList != null && vendorList.Any())
             {
                 foreach (var vendor in vendorList)
                 {
+                    ImGui.TableNextRow();
+                    ImGui.AlignTextToFramePadding();
+                    ImGui.TableNextColumn();
                     ImGui.Text(vendor.Vendor);
-                    ImGui.NextColumn();
+                    ImGui.TableNextColumn();
                     ImGui.Text(vendor.Location);
-                    ImGui.NextColumn();
+                    ImGui.TableNextColumn();
                     ImGui.Text(vendor.FlagPosition);
-                    ImGui.NextColumn();
+                    ImGui.TableNextColumn();
                     ImGui.Text($"{vendor.Cost} {vendor.CostType}");
-                    ImGui.NextColumn();
-                    ImGui.Separator();
+                    ImGui.TableNextColumn();
                 }
             }
             else
             {
+                ImGui.TableNextRow();
+                ImGui.TableNextColumn();
                 ImGui.Text("This probably isn't");
-                ImGui.NextColumn();
+                ImGui.TableNextColumn();
                 ImGui.Text("obtained from NPCs");
             }
 
-            ImGui.EndChild();
-            ImGui.Separator();
+            ImGui.EndTable();
+            // ImGui.Separator();
 
             #endregion
         }
