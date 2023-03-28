@@ -178,22 +178,12 @@ public class PluginUi : Window, System.IDisposable
             ImGui.BeginTable("obtainedFrom", 4, ImGuiTableFlags.ScrollY | ImGuiTableFlags.RowBg | ImGuiTableFlags.Borders | ImGuiTableFlags.NoHostExtendX,
                              new Vector2(0f, itemTextSize.Y * 13));
 
-            ImGui.TableSetupScrollFreeze(0, 1);
-            ImGui.TableSetupColumn("name", ImGuiTableColumnFlags.WidthFixed, 200.0f);
-            ImGui.TableSetupColumn("location", ImGuiTableColumnFlags.WidthFixed, 230.0f);
-            ImGui.TableSetupColumn("position", ImGuiTableColumnFlags.WidthFixed, 100.0f);
-            ImGui.TableSetupColumn("actions", ImGuiTableColumnFlags.WidthFixed, 40.0f);
-
-            ImGui.TableNextRow();
-            ImGui.AlignTextToFramePadding();
-            ImGui.TableNextColumn();
-
-            ImGui.Text("Name");
-            ImGui.TableNextColumn();
-            ImGui.Text("Location");
-            ImGui.TableNextColumn();
-            ImGui.Text("Position");
-
+            ImGui.TableSetupScrollFreeze(4, 1);
+            ImGui.TableSetupColumn("Name", ImGuiTableColumnFlags.WidthFixed, 200.0f);
+            ImGui.TableSetupColumn("Location", ImGuiTableColumnFlags.WidthFixed, 230.0f);
+            ImGui.TableSetupColumn("Position", ImGuiTableColumnFlags.WidthFixed, 100.0f);
+            ImGui.TableSetupColumn("Actions", ImGuiTableColumnFlags.WidthFixed, 40.0f);
+            ImGui.TableHeadersRow();
 
             var mobList = _lootData?.LootLocations.OrderBy(m => m.MobName).ToList();
 
@@ -245,24 +235,12 @@ public class PluginUi : Window, System.IDisposable
             ImGui.Text("Purchased From");
             ImGui.BeginTable("purchasedFrom", 4, ImGuiTableFlags.ScrollY | ImGuiTableFlags.RowBg | ImGuiTableFlags.Borders | ImGuiTableFlags.NoHostExtendX,
                              new Vector2(0f, itemTextSize.Y * 13));
-            ImGui.TableSetupScrollFreeze(0, 1);
-            ImGui.TableSetupColumn("vendor", ImGuiTableColumnFlags.WidthFixed, 200f);
-            ImGui.TableSetupColumn("location", ImGuiTableColumnFlags.WidthFixed, 150f);
-            ImGui.TableSetupColumn("position", ImGuiTableColumnFlags.WidthFixed, 100f);
-            ImGui.TableSetupColumn("price", ImGuiTableColumnFlags.WidthFixed, 200f);
-
-            ImGui.TableNextRow();
-
-            ImGui.AlignTextToFramePadding();
-            ImGui.TableNextColumn();
-            ImGui.Text("Vendor");
-            ImGui.TableNextColumn();
-            ImGui.Text("Location");
-            ImGui.TableNextColumn();
-            ImGui.Text("Position");
-            ImGui.TableNextColumn();
-            ImGui.Text("Price");
-            ImGui.TableNextColumn();
+            ImGui.TableSetupScrollFreeze(4, 1);
+            ImGui.TableSetupColumn("Vendor", ImGuiTableColumnFlags.WidthFixed, 200f);
+            ImGui.TableSetupColumn("Location", ImGuiTableColumnFlags.WidthFixed, 150f);
+            ImGui.TableSetupColumn("Position", ImGuiTableColumnFlags.WidthFixed, 100f);
+            ImGui.TableSetupColumn("Price", ImGuiTableColumnFlags.WidthFixed, 200f);
+            ImGui.TableHeadersRow();
 
             var vendorList = _lootData?.LootPurchaseLocations.OrderBy(v => v.Vendor).ToList();
             if (vendorList != null && vendorList.Any())

@@ -1,12 +1,12 @@
 {
   "Author": "Sylf",
   "Name": "Monster Loot Hunter",
-  "Punchline": "What to check where you can obtain materials? This is the plugin for you!",
+  "Punchline": "Want to check where you can obtain materials? This is the plugin for you!",
   "Description": "Check where you can obtain a material from monsters, duties, crafting, gathering or where they can be bought from NPCs.",
   "InternalName": "monsterLootHunter",
   "ApplicableVersion": "any",
-  "Changelog": "- Fixed purchased from table not showing\n- Internal plugin and UI modification",
-  "AssemblyVersion": "1.0.11",
+  "Changelog": "- Fixes table crashing issue",
+  "AssemblyVersion": "1.0.12",
   "RepoUrl": "https://github.com/danielbrenom/MonsterLootHunter",
   "DalamudApiLevel": 8,
   "Tags": [
