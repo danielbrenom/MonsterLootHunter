@@ -5,8 +5,8 @@
   "Description": "Check where you can obtain a material from monsters, duties, crafting, gathering or where they can be bought from NPCs.",
   "InternalName": "monsterLootHunter",
   "ApplicableVersion": "any",
-  "Changelog": "- Fixes table crashing issue",
-  "AssemblyVersion": "1.0.12",
+  "Changelog": "- Hotfix for game crash issue",
+  "AssemblyVersion": "1.0.12.1",
   "RepoUrl": "https://github.com/danielbrenom/MonsterLootHunter",
   "DalamudApiLevel": 8,
   "Tags": [

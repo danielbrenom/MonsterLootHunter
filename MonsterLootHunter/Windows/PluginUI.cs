@@ -178,7 +178,6 @@ public class PluginUi : Window, System.IDisposable
             ImGui.BeginTable("obtainedFrom", 4, ImGuiTableFlags.ScrollY | ImGuiTableFlags.RowBg | ImGuiTableFlags.Borders | ImGuiTableFlags.NoHostExtendX,
                              new Vector2(0f, itemTextSize.Y * 13));
 
-            ImGui.TableSetupScrollFreeze(4, 1);
             ImGui.TableSetupColumn("Name", ImGuiTableColumnFlags.WidthFixed, 200.0f);
             ImGui.TableSetupColumn("Location", ImGuiTableColumnFlags.WidthFixed, 230.0f);
             ImGui.TableSetupColumn("Position", ImGuiTableColumnFlags.WidthFixed, 100.0f);
@@ -216,7 +215,6 @@ public class PluginUi : Window, System.IDisposable
             else
             {
                 ImGui.TableNextRow();
-                ImGui.AlignTextToFramePadding();
                 ImGui.TableNextColumn();
                 ImGui.Text("This probably isn't obtained");
                 ImGui.TableNextColumn();
@@ -235,7 +233,7 @@ public class PluginUi : Window, System.IDisposable
             ImGui.Text("Purchased From");
             ImGui.BeginTable("purchasedFrom", 4, ImGuiTableFlags.ScrollY | ImGuiTableFlags.RowBg | ImGuiTableFlags.Borders | ImGuiTableFlags.NoHostExtendX,
                              new Vector2(0f, itemTextSize.Y * 13));
-            ImGui.TableSetupScrollFreeze(4, 1);
+            
             ImGui.TableSetupColumn("Vendor", ImGuiTableColumnFlags.WidthFixed, 200f);
             ImGui.TableSetupColumn("Location", ImGuiTableColumnFlags.WidthFixed, 150f);
             ImGui.TableSetupColumn("Position", ImGuiTableColumnFlags.WidthFixed, 100f);
