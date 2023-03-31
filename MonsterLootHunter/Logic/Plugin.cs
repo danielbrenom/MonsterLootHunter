@@ -40,7 +40,7 @@ public class Plugin : IDalamudPlugin
         new PluginModule().Register(_pluginServiceFactory);
 
 
-        _windowService.RegisterWindow(new ConfigWindow(_pluginServiceFactory), WindowConstants.ConfigWindowName);
+        _windowService.RegisterWindow(new ConfigWindow(configuration), WindowConstants.ConfigWindowName);
         _windowService.RegisterWindow(new PluginUi(_pluginServiceFactory), WindowConstants.MainWindowName);
 
         CommandManager.AddHandler(PluginConstants.CommandSlash, new CommandInfo(OnCommand)

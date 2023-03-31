@@ -3,20 +3,20 @@ using System.Numerics;
 using Dalamud.Interface.Windowing;
 using ImGuiNET;
 using MonsterLootHunter.Logic;
-using MonsterLootHunter.Services;
 using MonsterLootHunter.Utils;
 
 namespace MonsterLootHunter.Windows;
 
 public class ConfigWindow : Window, IDisposable
 {
-    private readonly PluginServiceFactory _pluginServiceFactoryFactory;
+    private Configuration _configuration;
     private readonly float _scale;
     private bool _contextIntegration;
+    private bool _legacyViewer;
 
-    public ConfigWindow(PluginServiceFactory serviceFactoryFactory) : base(WindowConstants.ConfigWindowName, ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoScrollWithMouse)
+    public ConfigWindow(Configuration configuration) : base(WindowConstants.ConfigWindowName, ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoScrollWithMouse | ImGuiWindowFlags.NoResize)
     {
-        _pluginServiceFactoryFactory = serviceFactoryFactory;
+        _configuration = configuration;
         _scale = ImGui.GetIO().FontGlobalScale;
         Size = new Vector2(250, 150) * _scale;
         SizeConstraints = new WindowSizeConstraints
@@ -29,10 +29,13 @@ public class ConfigWindow : Window, IDisposable
 
     public override void Draw()
     {
-        _contextIntegration = _pluginServiceFactoryFactory.Create<Configuration>().ContextMenuIntegration;
+        _contextIntegration = _configuration.ContextMenuIntegration;
+        _legacyViewer = _configuration.UseLegacyViewer;
         ImGui.BeginChild("configurations", new Vector2(250, -1f) * _scale);
         if (ImGui.Checkbox("Context menu integration", ref _contextIntegration))
-            _pluginServiceFactoryFactory.Create<Configuration>().ContextMenuIntegration = _contextIntegration;
+            _configuration.ContextMenuIntegration = _contextIntegration;
+        if(ImGui.Checkbox("Use legacy viewer", ref _legacyViewer))
+            _configuration.UseLegacyViewer = _legacyViewer;
 
         if (ImGui.Button("Save and close"))
             IsOpen = false;
@@ -42,7 +45,7 @@ public class ConfigWindow : Window, IDisposable
 
     public override void OnClose()
     {
-        _pluginServiceFactoryFactory.Create<Configuration>().Save();
+        _configuration.Save();
         base.OnClose();
     }
 

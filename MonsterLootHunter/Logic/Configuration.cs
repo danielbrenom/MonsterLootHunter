@@ -10,6 +10,7 @@ public class Configuration : IPluginConfiguration
 {
     public int Version { get; set; } = 114;
     public bool ContextMenuIntegration { get; set; } = true;
+    public bool UseLegacyViewer { get; set; }
     public Dictionary<string, IEnumerable<ShopListItem>> ShoppingList { get; set; }
 
     [NonSerialized] private DalamudPluginInterface _pluginInterface;

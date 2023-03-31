@@ -97,7 +97,9 @@ public class ContextMenu : IServiceType, IDisposable
     private unsafe nint AgentById(AgentId id)
     {
         var uiModule = (UIModule*)_pluginServiceFactory.Create<GameGui>().GetUIModule();
+        if (uiModule is null) return nint.Zero;
         var agents = uiModule->GetAgentModule();
+        if (agents is null) return nint.Zero;
         var agent = agents->GetAgentByInternalId(id);
         return (nint)agent;
     }

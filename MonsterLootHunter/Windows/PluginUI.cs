@@ -14,6 +14,7 @@ using ImGuiScene;
 using Lumina.Excel.GeneratedSheets;
 using MonsterLootHunter.Data;
 using MonsterLootHunter.Helpers;
+using MonsterLootHunter.Logic;
 using MonsterLootHunter.Services;
 using MonsterLootHunter.Utils;
 
@@ -22,11 +23,14 @@ namespace MonsterLootHunter.Windows;
 public class PluginUi : Window, System.IDisposable
 {
     private readonly PluginServiceFactory _pluginServiceFactory;
+    private readonly Configuration _configuration;
+    private readonly MaterialTableRenderer _materialTableRenderer;
     private Item _selectedItem;
     private TextureWrap _selectedItemIcon;
     private List<KeyValuePair<ItemSearchCategory, List<Item>>> _enumerableCategoriesAndItems;
     private LootData _lootData;
     private readonly float _scale;
+    private readonly Vector2 itemTextSize;
     private readonly CancellationTokenSource _tokenSource;
     private bool Loading { get; set; }
 
@@ -47,9 +51,12 @@ public class PluginUi : Window, System.IDisposable
     public PluginUi(PluginServiceFactory serviceFactory) : base(WindowConstants.MainWindowName, ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoScrollWithMouse)
     {
         _pluginServiceFactory = serviceFactory;
+        _configuration = _pluginServiceFactory.Create<Configuration>();
         _selectedItem = new Item();
         _tokenSource = new CancellationTokenSource();
         _scale = ImGui.GetIO().FontGlobalScale;
+        itemTextSize = ImGui.CalcTextSize(string.Empty);
+        _materialTableRenderer = new MaterialTableRenderer(_pluginServiceFactory.Create<MapManagerService>(), _scale, itemTextSize);
         SizeConstraints = new WindowSizeConstraints
         {
             MinimumSize = new Vector2(800, 600) * _scale,
@@ -68,11 +75,9 @@ public class PluginUi : Window, System.IDisposable
         ImGui.InputTextWithHint("##searchString", "Search for loot", ref _searchString, 256);
         ImGui.Separator();
 
-        ImGui.BeginChild("itemTree", new Vector2(0, -1.0f * ImGui.GetFrameHeightWithSpacing()), false, ImGuiWindowFlags.HorizontalScrollbar | ImGuiWindowFlags.AlwaysHorizontalScrollbar);
-        var itemTextSize = ImGui.CalcTextSize(string.Empty);
-
         #region Loot Categories
 
+        ImGui.BeginChild("itemTree", new Vector2(0, -1.0f * ImGui.GetFrameHeightWithSpacing()), false, ImGuiWindowFlags.HorizontalScrollbar | ImGuiWindowFlags.AlwaysHorizontalScrollbar);
         foreach (var (category, items) in _enumerableCategoriesAndItems)
         {
             if (!ImGui.TreeNode(category.Name + "##cat" + category.RowId)) continue;
@@ -126,9 +131,9 @@ public class PluginUi : Window, System.IDisposable
             ImGui.TreePop();
         }
 
-        #endregion
-
         ImGui.EndChild();
+
+        #endregion
 
         ImGui.Text("Settings: ");
         ImGui.SameLine();
@@ -175,100 +180,24 @@ public class PluginUi : Window, System.IDisposable
             #region Obtained From Table
 
             ImGui.Text("Obtained From");
-            ImGui.BeginTable("obtainedFrom", 4, ImGuiTableFlags.ScrollY | ImGuiTableFlags.RowBg | ImGuiTableFlags.Borders | ImGuiTableFlags.NoHostExtendX,
-                             new Vector2(0f, itemTextSize.Y * 13));
-
-            ImGui.TableSetupColumn("Name", ImGuiTableColumnFlags.WidthFixed, 200.0f);
-            ImGui.TableSetupColumn("Location", ImGuiTableColumnFlags.WidthFixed, 230.0f);
-            ImGui.TableSetupColumn("Position", ImGuiTableColumnFlags.WidthFixed, 100.0f);
-            ImGui.TableSetupColumn("Actions", ImGuiTableColumnFlags.WidthFixed, 40.0f);
-            ImGui.TableHeadersRow();
-
             var mobList = _lootData?.LootLocations.OrderBy(m => m.MobName).ToList();
-
-            if (mobList != null && mobList.Any())
-            {
-                foreach (var mob in mobList)
-                {
-                    var index = mobList.IndexOf(mob);
-                    ImGui.TableNextRow(ImGuiTableRowFlags.None, itemTextSize.Y * 1.5f);
-                    ImGui.AlignTextToFramePadding();
-                    ImGui.TableNextColumn();
-                    ImGui.Text(mob.MobName);
-                    ImGui.TableNextColumn();
-                    ImGui.Text(mob.MobLocation);
-                    ImGui.TableNextColumn();
-                    ImGui.Text(mob.MobFlag);
-                    ImGui.TableNextColumn();
-                    if (!string.IsNullOrEmpty(mob.MobFlag) && mob.MobFlag != "N/A")
-                    {
-                        ImGui.PushFont(UiBuilder.IconFont);
-                        if (ImGui.Button($"{(char)FontAwesomeIcon.MapMarkerAlt}##listing{index}", new Vector2(25 * _scale, itemTextSize.Y * _scale * 1.5f)))
-                            _pluginServiceFactory.Create<MapManagerService>().MarkMapFlag(mob.MobLocation, mob.MobFlag);
-
-                        ImGui.PopFont();
-                    }
-
-                    ImGui.TableNextColumn();
-                }
-            }
+            if (_configuration.UseLegacyViewer)
+                _materialTableRenderer.RenderLegacyMobTable(mobList);
             else
-            {
-                ImGui.TableNextRow();
-                ImGui.TableNextColumn();
-                ImGui.Text("This probably isn't obtained");
-                ImGui.TableNextColumn();
-                ImGui.Text("this way or the Wiki don't have");
-                ImGui.TableNextColumn();
-                ImGui.Text("this information");
-            }
-
-            ImGui.EndTable();
-            ImGui.Separator();
+                _materialTableRenderer.RenderMobTable(mobList);
 
             #endregion
+
+            ImGui.Separator();
 
             #region Purchased From Table
 
             ImGui.Text("Purchased From");
-            ImGui.BeginTable("purchasedFrom", 4, ImGuiTableFlags.ScrollY | ImGuiTableFlags.RowBg | ImGuiTableFlags.Borders | ImGuiTableFlags.NoHostExtendX,
-                             new Vector2(0f, itemTextSize.Y * 13));
-            
-            ImGui.TableSetupColumn("Vendor", ImGuiTableColumnFlags.WidthFixed, 200f);
-            ImGui.TableSetupColumn("Location", ImGuiTableColumnFlags.WidthFixed, 150f);
-            ImGui.TableSetupColumn("Position", ImGuiTableColumnFlags.WidthFixed, 100f);
-            ImGui.TableSetupColumn("Price", ImGuiTableColumnFlags.WidthFixed, 200f);
-            ImGui.TableHeadersRow();
-
             var vendorList = _lootData?.LootPurchaseLocations.OrderBy(v => v.Vendor).ToList();
-            if (vendorList != null && vendorList.Any())
-            {
-                foreach (var vendor in vendorList)
-                {
-                    ImGui.TableNextRow();
-                    ImGui.AlignTextToFramePadding();
-                    ImGui.TableNextColumn();
-                    ImGui.Text(vendor.Vendor);
-                    ImGui.TableNextColumn();
-                    ImGui.Text(vendor.Location);
-                    ImGui.TableNextColumn();
-                    ImGui.Text(vendor.FlagPosition);
-                    ImGui.TableNextColumn();
-                    ImGui.Text($"{vendor.Cost} {vendor.CostType}");
-                    ImGui.TableNextColumn();
-                }
-            }
+            if (_configuration.UseLegacyViewer)
+                _materialTableRenderer.RenderLegacyVendorTable(vendorList);
             else
-            {
-                ImGui.TableNextRow();
-                ImGui.TableNextColumn();
-                ImGui.Text("This probably isn't");
-                ImGui.TableNextColumn();
-                ImGui.Text("obtained from NPCs");
-            }
-
-            ImGui.EndTable();
-            // ImGui.Separator();
+                _materialTableRenderer.RenderVendorTable(vendorList);
 
             #endregion
         }
