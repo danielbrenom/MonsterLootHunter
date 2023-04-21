@@ -63,12 +63,12 @@ public class PluginUi : Window, System.IDisposable
             MaximumSize = new Vector2(800, 600) * _scale * 1.5f
         };
         SizeCondition = ImGuiCond.FirstUseEver;
+        _enumerableCategoriesAndItems = new List<KeyValuePair<ItemSearchCategory, List<Item>>>();
     }
 
     public override void Draw()
     {
-        (_enumerableCategoriesAndItems, _lastSearchString) =
-            _pluginServiceFactory.Create<ItemManagerService>().GetEnumerableItems(_searchString, _searchString != _lastSearchString);
+        LoadCategoryItemList();
 
         ImGui.BeginChild("lootListColumn", new Vector2(267, 0) * _scale, true);
         ImGui.SetNextItemWidth(ImGui.GetIO().FontGlobalScale - ImGui.GetStyle().ItemSpacing.X);
@@ -208,6 +208,15 @@ public class PluginUi : Window, System.IDisposable
         ImGui.EndChild();
     }
 
+    private void LoadCategoryItemList()
+    {
+        var shouldPerformSearch = !_enumerableCategoriesAndItems.Any() || _searchString != _lastSearchString;
+        //Prevent loading the list on every draw if it's not necessary
+        if (!shouldPerformSearch) return;
+        (_enumerableCategoriesAndItems, _lastSearchString) =
+            _pluginServiceFactory.Create<ItemManagerService>().GetEnumerableItems(_searchString, _searchString != _lastSearchString);
+    }
+
     protected internal async Task ChangeSelectedItem(uint itemId)
     {
         _selectedItem = _pluginServiceFactory.Create<ItemManagerService>().RetrieveItem(itemId);
@@ -223,7 +232,8 @@ public class PluginUi : Window, System.IDisposable
         {
             _lootData = default;
             var token = _tokenSource.Token;
-            _lootData = await _pluginServiceFactory.Create<ScrapperClient>().GetLootData(_selectedItem.Name, token)
+            _lootData = await _pluginServiceFactory.Create<ScrapperClient>()
+                                                   .GetLootData(_selectedItem.Name, token)
                                                    .ConfigureAwait(false);
             token.ThrowIfCancellationRequested();
         }

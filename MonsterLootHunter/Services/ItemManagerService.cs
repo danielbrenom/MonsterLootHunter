@@ -36,13 +36,12 @@ public class ItemManagerService : IServiceType
 
     public (List<KeyValuePair<ItemSearchCategory, List<Item>>>, string) GetEnumerableItems(string nameSearched, bool shouldPerformSearch)
     {
-        var result = string.IsNullOrEmpty(nameSearched) && !shouldPerformSearch
+        var result = string.IsNullOrEmpty(nameSearched) || !shouldPerformSearch
             ? CachedList.ToList()
-            : CachedList
-             .Select(kv => new KeyValuePair<ItemSearchCategory, List<Item>>(
-                         kv.Key, kv.Value.Where(i => i.Name.ToString().ToUpperInvariant().Contains(nameSearched.ToUpperInvariant(), StringComparison.InvariantCulture)).ToList()))
-             .Where(kv => kv.Value.Count > 0)
-             .ToList();
+            : CachedList.ToDictionary(items => items.Key,
+                                      items => items.Value.Where(i => i.Name.ToString().Contains(nameSearched, StringComparison.InvariantCultureIgnoreCase)).ToList())
+                        .Where(kv => kv.Value.Count > 0)
+                        .ToList();
         return (result, nameSearched);
     }
 
@@ -51,31 +50,14 @@ public class ItemManagerService : IServiceType
         try
         {
             var itemSearchCategories = _dataManager.GetExcelSheet<ItemSearchCategory>();
-            if (itemSearchCategories is null) return default;
-            var sortedCategories = itemSearchCategories.Where(c => c.Category > 0).OrderBy(c => c.Category).ThenBy(c => c.Order);
-            var sortedCategoriesDict = new Dictionary<ItemSearchCategory, List<Item>>();
+            var sortedCategories = itemSearchCategories?.Where(c => c.Category > 0 && LootIdentifierConstants.CategoryIds.Contains(c.RowId))
+                                                        .OrderBy(c => c.Category).ThenBy(c => c.Order);
 
-            foreach (var c in sortedCategories)
-            {
-                switch (c.Name)
-                {
-                    case LootIdentifierConstants.Leather:
-                    case LootIdentifierConstants.Cloth:
-                    case LootIdentifierConstants.Reagents:
-                    case LootIdentifierConstants.Bone:
-                    case LootIdentifierConstants.Ingredients:
-                    case LootIdentifierConstants.Stone:
-                    case LootIdentifierConstants.Metal:
-                        sortedCategoriesDict.Add(c, _items.Where(i => i.ItemSearchCategory.Row == c.RowId)
-                                                          .Where(i => !LootIdentifierConstants.ExclusionRegex.IsMatch(i.Name))
-                                                          .OrderBy(i => i.Name.ToString()).ToList());
-                        break;
-                    default:
-                        continue;
-                }
-            }
-
-            return sortedCategoriesDict;
+            return sortedCategories?.ToDictionary(searchCategory => searchCategory,
+                                                  c => _items.Where(i => i.ItemSearchCategory.Row == c.RowId)
+                                                             .Where(i => !LootIdentifierConstants.ExclusionRegex.IsMatch(i.Name))
+                                                             .OrderBy(i => i.Name.ToString())
+                                                             .ToList());
         }
         catch (Exception ex)
         {
