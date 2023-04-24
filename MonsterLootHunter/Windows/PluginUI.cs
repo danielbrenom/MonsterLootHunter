@@ -236,6 +236,16 @@ public class PluginUi : Window, System.IDisposable
                                                    .GetLootData(_selectedItem.Name, token)
                                                    .ConfigureAwait(false);
             token.ThrowIfCancellationRequested();
+
+            if (!_lootData.LootLocations.Any() && !_lootData.LootPurchaseLocations.Any())
+            {
+                var lookupItem = LookupItemTable.ItemTable.First(lui => lui.Id == _selectedItem.RowId);
+                _lootData = await _pluginServiceFactory.Create<ScrapperClient>()
+                                                       .GetLootData(lookupItem.Name, token)
+                                                       .ConfigureAwait(false);
+
+                token.ThrowIfCancellationRequested();
+            }
         }
         catch (System.OperationCanceledException e)
         {
