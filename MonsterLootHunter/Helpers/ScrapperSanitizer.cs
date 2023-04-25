@@ -84,7 +84,9 @@ namespace MonsterLootHunter.Helpers
             try
             {
                 var purchaseHeader = node.QuerySelectorAll("h3").ToList();
-                if (!purchaseHeader.Any(n => n.QuerySelector("span#Purchase") != null || n.QuerySelector("span#Purchased_From") != null))
+                var purchaseTopHeader = node.QuerySelectorAll("h2").ToList();
+                if (!purchaseHeader.Any(n => n.QuerySelector("span#Purchase") != null || n.QuerySelector("span#Purchased") != null || n.QuerySelector("span#Purchased_From") != null) ||
+                    purchaseTopHeader.All(n => n.QuerySelector("span#Acquisition") == null))
                     return Enumerable.Empty<LootPurchase>();
                 var purchaseList = node.QuerySelector("table.npc tbody")?.QuerySelectorAll("tr").ToList();
                 if (purchaseList is null || !purchaseList.Any()) return Enumerable.Empty<LootPurchase>();
@@ -188,8 +190,14 @@ namespace MonsterLootHunter.Helpers
                 var gatherHeader = pageHeaders.First(hNode => hNode.QuerySelector("span#Gathering") is not null ||
                                                               hNode.QuerySelector("span#Gathered") is not null);
                 var gatherList = gatherHeader.NextSibling.NextSibling.QuerySelectorAll("li").ToList();
+
                 if (gatherList.Any())
-                    return Gathering(gatherList);
+                {
+                    if (!gatherList.First().InnerText.Contains("Reduction")) return Gathering(gatherList);
+                    gatherList.RemoveAt(0);
+                    return AetherialReduction(gatherList);
+                }
+
                 var gatherableInfo = gatherHeader.NextSibling.NextSibling;
                 return gatherableInfo is not null ? Gathered(gatherableInfo) : Enumerable.Empty<LootDrops>();
 
@@ -210,19 +218,21 @@ namespace MonsterLootHunter.Helpers
                     };
                 }
 
-                IEnumerable<LootDrops> Gathering(IEnumerable<HtmlNode> gatheringList)
-                {
-                    return from gatherNode in gatheringList
-                        let anchors = gatherNode.QuerySelectorAll("a").ToList()
-                        let flag = anchors.LastOrDefault()?.NextSibling.InnerText ?? string.Empty
-                        let flagParsed = Regex.Matches(flag, @"(\d+\.?\d*)")
-                        select new LootDrops
-                        {
-                            MobName = $"{gatherNode.ChildNodes.First().InnerText}{anchors.First().InnerText}",
-                            MobLocation = $"{anchors[1].InnerText}-{anchors.Last().InnerText}",
-                            MobFlag = $"({flagParsed[0].Value},{flagParsed[1].Value})"
-                        };
-                }
+                IEnumerable<LootDrops> Gathering(IEnumerable<HtmlNode> gatheringList) =>
+                    from gatherNode in gatheringList
+                    let anchors = gatherNode.QuerySelectorAll("a").ToList()
+                    let flag = anchors.LastOrDefault()?.NextSibling.InnerText ?? string.Empty
+                    let flagParsed = Regex.Matches(flag, @"(\d+\.?\d*)")
+                    select new LootDrops
+                    {
+                        MobName = $"{gatherNode.ChildNodes.First().InnerText}{anchors.First().InnerText}",
+                        MobLocation = $"{anchors[1].InnerText}-{anchors.Last().InnerText}",
+                        MobFlag = $"({flagParsed[0].Value},{flagParsed[1].Value})"
+                    };
+
+                IEnumerable<LootDrops> AetherialReduction(IEnumerable<HtmlNode> reductionList) =>
+                    reductionList.Select(htmlNode => htmlNode.QuerySelectorAll("a").Last())
+                                 .Select(itemName => new LootDrops { MobName = itemName.InnerText, MobLocation = "Aetherial Reduction", MobFlag = string.Empty });
             }
             catch (System.Exception)
             {

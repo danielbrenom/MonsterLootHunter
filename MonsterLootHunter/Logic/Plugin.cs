@@ -1,5 +1,6 @@
 ﻿using System;
 using Dalamud.Data;
+using Dalamud.Game.ClientState;
 using Dalamud.Game.Command;
 using Dalamud.Game.Gui;
 using Dalamud.IoC;
@@ -24,12 +25,13 @@ public class Plugin : IDalamudPlugin
         [RequiredVersion("1.0")] DalamudPluginInterface pluginInterface,
         [RequiredVersion("1.0")] CommandManager commandManager,
         [RequiredVersion("1.0")] DataManager dataManager,
-        [RequiredVersion("1.0")] GameGui gameGui)
+        [RequiredVersion("1.0")] GameGui gameGui,
+        [RequiredVersion("1.0")] ClientState clientState)
     {
         PluginInterface = pluginInterface;
         CommandManager = commandManager;
         var configuration = (Configuration)PluginInterface.GetPluginConfig() ?? new Configuration();
-        configuration.Initialize(pluginInterface);
+        configuration.Initialize(pluginInterface, clientState.ClientLanguage);
         _windowService = new WindowService(new(WindowConstants.WindowSystemNamespace));
         _pluginServiceFactory = new PluginServiceFactory().RegisterService(pluginInterface)
                                                           .RegisterService(_windowService)

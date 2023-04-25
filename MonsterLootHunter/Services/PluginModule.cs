@@ -11,6 +11,7 @@ public class PluginModule : IModule
                  .RegisterService<MapManagerService>()
                  .RegisterService<ScrapperSanitizer>()
                  .RegisterService<ScrapperClient>()
-                 .RegisterService<ContextMenu>();
+                 .RegisterService<ContextMenu>()
+                 .RegisterService<GarlandClient>();
     }
 }

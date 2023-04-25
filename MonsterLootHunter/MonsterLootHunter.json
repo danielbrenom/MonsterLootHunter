@@ -5,8 +5,8 @@
   "Description": "Check where you can obtain a material from monsters, duties, crafting, gathering or where they can be bought from NPCs.",
   "InternalName": "monsterLootHunter",
   "ApplicableVersion": "any",
-  "Changelog": "- Added item lookup table for backup information retrieval",
-  "AssemblyVersion": "1.0.15.3",
+  "Changelog": "- Added alternative item name lookup for information retrieval\n- Fixed data processing of wiki information",
+  "AssemblyVersion": "1.0.16.4",
   "RepoUrl": "https://github.com/danielbrenom/MonsterLootHunter",
   "DalamudApiLevel": 8,
   "Tags": [

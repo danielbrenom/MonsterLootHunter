@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using Dalamud;
 using Dalamud.Configuration;
 using Dalamud.Plugin;
 using MonsterLootHunter.Data;
@@ -11,14 +12,17 @@ public class Configuration : IPluginConfiguration
     public int Version { get; set; } = 114;
     public bool ContextMenuIntegration { get; set; } = true;
     public bool UseLegacyViewer { get; set; }
-    public Dictionary<string, IEnumerable<ShopListItem>> ShoppingList { get; set; }
+    private bool ClientUsingAnotherLanguage { get; set; }
 
     [NonSerialized] private DalamudPluginInterface _pluginInterface;
 
-    public void Initialize(DalamudPluginInterface pluginInterface)
+    public void Initialize(DalamudPluginInterface pluginInterface, ClientLanguage language)
     {
         _pluginInterface = pluginInterface;
+        ClientUsingAnotherLanguage = language != ClientLanguage.English;
     }
+
+    public bool UsingAnotherLanguage() => ClientUsingAnotherLanguage;
 
     public void Save()
     {

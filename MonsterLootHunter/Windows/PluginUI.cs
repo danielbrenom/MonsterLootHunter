@@ -232,20 +232,12 @@ public class PluginUi : Window, System.IDisposable
         {
             _lootData = default;
             var token = _tokenSource.Token;
+            var itemName = _configuration.UsingAnotherLanguage() ? await _pluginServiceFactory.Create<GarlandClient>().GetItemName(_selectedItem.RowId, token) : _selectedItem.Name.ToString();
+
             _lootData = await _pluginServiceFactory.Create<ScrapperClient>()
-                                                   .GetLootData(_selectedItem.Name, token)
+                                                   .GetLootData(itemName, token)
                                                    .ConfigureAwait(false);
             token.ThrowIfCancellationRequested();
-
-            if (!_lootData.LootLocations.Any() && !_lootData.LootPurchaseLocations.Any())
-            {
-                var lookupItem = LookupItemTable.ItemTable.First(lui => lui.Id == _selectedItem.RowId);
-                _lootData = await _pluginServiceFactory.Create<ScrapperClient>()
-                                                       .GetLootData(lookupItem.Name, token)
-                                                       .ConfigureAwait(false);
-
-                token.ThrowIfCancellationRequested();
-            }
         }
         catch (System.OperationCanceledException e)
         {
