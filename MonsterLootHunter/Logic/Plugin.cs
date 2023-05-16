@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Reflection;
 using Dalamud.Data;
 using Dalamud.Game.ClientState;
 using Dalamud.Game.Command;
@@ -15,6 +16,7 @@ namespace MonsterLootHunter.Logic;
 public class Plugin : IDalamudPlugin
 {
     public string Name => PluginConstants.CommandName;
+    internal static string Version = string.Empty;
 
     private DalamudPluginInterface PluginInterface { get; init; }
     private CommandManager CommandManager { get; init; }
@@ -32,6 +34,7 @@ public class Plugin : IDalamudPlugin
         CommandManager = commandManager;
         var configuration = (Configuration)PluginInterface.GetPluginConfig() ?? new Configuration();
         configuration.Initialize(pluginInterface, clientState.ClientLanguage);
+        Version = Assembly.GetExecutingAssembly().GetName().Version?.ToString() ?? "";
         _windowService = new WindowService(new(WindowConstants.WindowSystemNamespace));
         _pluginServiceFactory = new PluginServiceFactory().RegisterService(pluginInterface)
                                                           .RegisterService(_windowService)

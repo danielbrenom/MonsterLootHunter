@@ -12,6 +12,7 @@ public class PluginModule : IModule
                  .RegisterService<ScrapperSanitizer>()
                  .RegisterService<ScrapperClient>()
                  .RegisterService<ContextMenu>()
-                 .RegisterService<GarlandClient>();
+                 .RegisterService<GarlandClient>()
+                 .RegisterService<HuntListService>();
     }
 }

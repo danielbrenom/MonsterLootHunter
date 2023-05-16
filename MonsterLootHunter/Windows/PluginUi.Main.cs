@@ -20,17 +20,16 @@ using MonsterLootHunter.Utils;
 
 namespace MonsterLootHunter.Windows;
 
-public class PluginUi : Window, System.IDisposable
+public partial class PluginUi
 {
-    private readonly PluginServiceFactory _pluginServiceFactory;
     private readonly Configuration _configuration;
     private readonly MaterialTableRenderer _materialTableRenderer;
+    private readonly ItemManagerService _itemManagerService;
+
     private Item _selectedItem;
     private TextureWrap _selectedItemIcon;
     private List<KeyValuePair<ItemSearchCategory, List<Item>>> _enumerableCategoriesAndItems;
     private LootData _lootData;
-    private readonly float _scale;
-    private readonly Vector2 itemTextSize;
     private readonly CancellationTokenSource _tokenSource;
     private bool Loading { get; set; }
 
@@ -48,25 +47,7 @@ public class PluginUi : Window, System.IDisposable
 
     #endregion
 
-    public PluginUi(PluginServiceFactory serviceFactory) : base(WindowConstants.MainWindowName, ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoScrollWithMouse)
-    {
-        _pluginServiceFactory = serviceFactory;
-        _configuration = _pluginServiceFactory.Create<Configuration>();
-        _selectedItem = new Item();
-        _tokenSource = new CancellationTokenSource();
-        _scale = ImGui.GetIO().FontGlobalScale;
-        itemTextSize = ImGui.CalcTextSize(string.Empty);
-        _materialTableRenderer = new MaterialTableRenderer(_pluginServiceFactory.Create<MapManagerService>(), _scale, itemTextSize);
-        SizeConstraints = new WindowSizeConstraints
-        {
-            MinimumSize = new Vector2(800, 600) * _scale,
-            MaximumSize = new Vector2(800, 600) * _scale * 1.5f
-        };
-        SizeCondition = ImGuiCond.FirstUseEver;
-        _enumerableCategoriesAndItems = new List<KeyValuePair<ItemSearchCategory, List<Item>>>();
-    }
-
-    public override void Draw()
+    private void DrawMainUi()
     {
         LoadCategoryItemList();
 
@@ -85,12 +66,12 @@ public class PluginUi : Window, System.IDisposable
 
             for (var i = 0; i < items.Count; i++)
             {
-                if (ImGui.GetCursorPosY() < ImGui.GetScrollY() - itemTextSize.Y)
+                if (ImGui.GetCursorPosY() < ImGui.GetScrollY() - _itemTextSize.Y)
                 {
                     // Don't draw items above the scroll region.
                     var y = ImGui.GetCursorPosY();
-                    var sy = ImGui.GetScrollY() - itemTextSize.Y;
-                    var spacing = itemTextSize.Y + ImGui.GetStyle().ItemSpacing.Y;
+                    var sy = ImGui.GetScrollY() - _itemTextSize.Y;
+                    var spacing = _itemTextSize.Y + ImGui.GetStyle().ItemSpacing.Y;
                     var c = items.Count;
                     while (i < c && y < sy)
                     {
@@ -106,7 +87,7 @@ public class PluginUi : Window, System.IDisposable
                 {
                     // Don't draw item names below the scroll region
                     var remainingItems = items.Count - i;
-                    var remainingItemsHeight = itemTextSize.Y * remainingItems;
+                    var remainingItemsHeight = _itemTextSize.Y * remainingItems;
                     var remainingGapHeight = ImGui.GetStyle().ItemSpacing.Y * (remainingItems - 1);
                     ImGui.Dummy(new Vector2(1, remainingItemsHeight + remainingGapHeight));
                     break;
@@ -144,10 +125,9 @@ public class PluginUi : Window, System.IDisposable
             if (pluginWindow is not ConfigWindow window) return;
             window.IsOpen = true;
         }
-
         ImGui.PopFont();
-
         ImGui.EndChild();
+        
         ImGui.SameLine();
         ImGui.BeginChild("panelColumn", new Vector2(0, 0), false, ImGuiWindowFlags.NoScrollbar);
         if (_selectedItem?.RowId > 0)
@@ -219,7 +199,7 @@ public class PluginUi : Window, System.IDisposable
 
     protected internal async Task ChangeSelectedItem(uint itemId)
     {
-        _selectedItem = _pluginServiceFactory.Create<ItemManagerService>().RetrieveItem(itemId);
+        _selectedItem = _itemManagerService.RetrieveItem(itemId);
         var iconId = _selectedItem.Icon;
         var iconTexFile = _pluginServiceFactory.Create<DataManager>().GetIcon(iconId);
         _selectedItemIcon?.Dispose();

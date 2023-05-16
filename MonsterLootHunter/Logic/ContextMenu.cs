@@ -107,7 +107,7 @@ public class ContextMenu : IServiceType, IDisposable
     public void Dispose()
     {
         DisableIntegration();
-        _contextMenu?.Dispose();
+        _contextMenu.Dispose();
         GC.SuppressFinalize(this);
     }
 }
