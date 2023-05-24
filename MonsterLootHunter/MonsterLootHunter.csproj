@@ -2,7 +2,7 @@
     <PropertyGroup>
         <Authors>Sylf</Authors>
         <Company>Guiomarino Dev</Company>
-        <Version>1.0.16.4</Version>
+        <Version>1.0.17.4</Version>
         <Description>A monster loot finder plugin.</Description>
         <Copyright>Daniel Guiomarino</Copyright>
         <PackageProjectUrl>https://github.com/danielbrenom/MonsterLootHunter</PackageProjectUrl>
@@ -15,9 +15,9 @@
         <ProduceReferenceAssembly>false</ProduceReferenceAssembly>
         <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
         <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
-        <AssemblyVersion>1.0.16.4</AssemblyVersion>
-        <FileVersion>1.0.16.4</FileVersion>
-        <PackageVersion>1.0.16.4</PackageVersion>
+        <AssemblyVersion>1.0.17.4</AssemblyVersion>
+        <FileVersion>1.0.17.4</FileVersion>
+        <PackageVersion>1.0.17.4</PackageVersion>
         <RestorePackagesWithLockFile>true</RestorePackagesWithLockFile>
     </PropertyGroup>
     <PropertyGroup>
@@ -33,7 +33,7 @@
         <OutputPath>bin\Release</OutputPath>
     </PropertyGroup>
     <ItemGroup>
-        <PackageReference Include="Dalamud.ContextMenu" Version="1.2.2" />
+        <PackageReference Include="Dalamud.ContextMenu" Version="1.2.3" />
         <PackageReference Include="DalamudPackager" Version="2.1.11" />
         <PackageReference Include="HtmlAgilityPack" Version="1.11.46" />
         <PackageReference Include="Fizzler.Systems.HtmlAgilityPack" Version="1.2.1" />
