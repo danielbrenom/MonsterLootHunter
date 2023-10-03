@@ -4,10 +4,8 @@ using System.Globalization;
 using System.Linq;
 using System.Text.RegularExpressions;
 using Dalamud;
-using Dalamud.Data;
-using Dalamud.Game.Gui;
 using Dalamud.Game.Text.SeStringHandling.Payloads;
-using Dalamud.Logging;
+using Dalamud.Plugin.Services;
 using Lumina.Excel.GeneratedSheets;
 
 namespace MonsterLootHunter.Services;
@@ -17,12 +15,14 @@ public partial class MapManagerService : IServiceType
     [GeneratedRegex("(\\d+\\.?\\d*)")]
     private static partial Regex CoordinatesRegex();
     
-    private readonly GameGui _gameGui;
+    private readonly IGameGui _gameGui;
+    private readonly IPluginLog _pluginLog;
     private List<TerritoryType> CachedTerritories { get; }
 
-    public MapManagerService(DataManager dataManager, GameGui gameGui)
+    public MapManagerService(IDataManager dataManager, IGameGui gameGui, IPluginLog pluginLog)
     {
         _gameGui = gameGui;
+        _pluginLog = pluginLog;
         CachedTerritories = dataManager.GetExcelSheet<TerritoryType>()?.ToList();
     }
     
@@ -42,7 +42,7 @@ public partial class MapManagerService : IServiceType
         }
         catch (Exception e)
         {
-            PluginLog.Error($"Not able to mark location {locationName} on map. With error: {e.Message}");
+            _pluginLog.Error($"Not able to mark location {locationName} on map. With error: {e.Message}");
         }
     }
 }

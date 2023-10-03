@@ -2,8 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using Dalamud;
-using Dalamud.Data;
-using Dalamud.Logging;
+using Dalamud.Plugin.Services;
 using Lumina.Excel.GeneratedSheets;
 using MonsterLootHunter.Utils;
 
@@ -11,13 +10,15 @@ namespace MonsterLootHunter.Services;
 
 public class ItemManagerService : IServiceType
 {
-    private readonly DataManager _dataManager;
+    private readonly IDataManager _dataManager;
+    private IPluginLog _pluginLog;
     private readonly IEnumerable<Item> _items;
     private Dictionary<ItemSearchCategory, List<Item>> CachedList { get; }
 
-    public ItemManagerService(DataManager dataManager)
+    public ItemManagerService(IDataManager dataManager, IPluginLog pluginLog)
     {
         _dataManager = dataManager;
+        _pluginLog = pluginLog;
         _items = dataManager.GetExcelSheet<Item>();
         CachedList = SortCategoriesAndItems();
     }
@@ -61,7 +62,7 @@ public class ItemManagerService : IServiceType
         }
         catch (Exception ex)
         {
-            PluginLog.Error(ex, "Error loading category list.");
+            _pluginLog.Error(ex, "Error loading category list.");
             return default;
         }
     }

@@ -1,9 +1,7 @@
 ﻿using System;
-using System.Collections.Generic;
 using Dalamud;
 using Dalamud.Configuration;
 using Dalamud.Plugin;
-using MonsterLootHunter.Data;
 
 namespace MonsterLootHunter.Logic;
 

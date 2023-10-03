@@ -3,14 +3,11 @@ using System.Linq;
 using System.Numerics;
 using System.Threading;
 using System.Threading.Tasks;
-using Dalamud.Data;
 using Dalamud.Interface;
+using Dalamud.Interface.Internal;
 using Dalamud.Interface.Windowing;
-using Dalamud.Logging;
-using Dalamud.Plugin;
-using Dalamud.Utility;
+using Dalamud.Plugin.Services;
 using ImGuiNET;
-using ImGuiScene;
 using Lumina.Excel.GeneratedSheets;
 using MonsterLootHunter.Data;
 using MonsterLootHunter.Helpers;
@@ -26,7 +23,7 @@ public class PluginUi : Window, System.IDisposable
     private readonly Configuration _configuration;
     private readonly MaterialTableRenderer _materialTableRenderer;
     private Item _selectedItem;
-    private TextureWrap _selectedItemIcon;
+    private IDalamudTextureWrap _selectedItemIcon;
     private List<KeyValuePair<ItemSearchCategory, List<Item>>> _enumerableCategoriesAndItems;
     private LootData _lootData;
     private readonly float _scale;
@@ -221,13 +218,8 @@ public class PluginUi : Window, System.IDisposable
     {
         _selectedItem = _pluginServiceFactory.Create<ItemManagerService>().RetrieveItem(itemId);
         var iconId = _selectedItem.Icon;
-        var iconTexFile = _pluginServiceFactory.Create<DataManager>().GetIcon(iconId);
         _selectedItemIcon?.Dispose();
-        if (iconTexFile is not null)
-            _selectedItemIcon = await _pluginServiceFactory.Create<DalamudPluginInterface>().UiBuilder
-                                                           .LoadImageRawAsync(iconTexFile.GetRgbaImageData(),
-                                                                              iconTexFile.Header.Width,
-                                                                              iconTexFile.Header.Height, 4);
+        _selectedItemIcon = _pluginServiceFactory.Create<ITextureProvider>().GetIcon(iconId);
         try
         {
             _lootData = default;
@@ -241,7 +233,7 @@ public class PluginUi : Window, System.IDisposable
         }
         catch (System.OperationCanceledException e)
         {
-            PluginLog.Error(e, "Request for loot $1 info failed", _selectedItem.Name);
+            _pluginServiceFactory.Create<IPluginLog>().Error(e, "Request for loot $1 info failed", _selectedItem.Name);
         }
         finally
         {

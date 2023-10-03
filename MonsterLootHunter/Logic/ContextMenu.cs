@@ -5,6 +5,8 @@ using Dalamud.ContextMenu;
 using Dalamud.Game.Gui;
 using Dalamud.Game.Text.SeStringHandling;
 using Dalamud.Game.Text.SeStringHandling.Payloads;
+using Dalamud.Plugin;
+using Dalamud.Plugin.Services;
 using MonsterLootHunter.Services;
 using MonsterLootHunter.Utils;
 using MonsterLootHunter.Windows;
@@ -16,12 +18,13 @@ namespace MonsterLootHunter.Logic;
 public class ContextMenu : IServiceType, IDisposable
 {
     private readonly PluginServiceFactory _pluginServiceFactory;
-    private readonly DalamudContextMenu _contextMenu = new();
+    private readonly DalamudContextMenu _contextMenu;
     private static readonly SeString SearchString = new(new TextPayload("Loot search"));
 
     public ContextMenu(PluginServiceFactory pluginServiceFactory)
     {
         _pluginServiceFactory = pluginServiceFactory;
+        _contextMenu = new(pluginServiceFactory.Create<DalamudPluginInterface>());
         EnableIntegration();
     }
 
@@ -74,7 +77,7 @@ public class ContextMenu : IServiceType, IDisposable
     }
 
     private GameObjectContextMenuItem CheckGameObjectItem(string name, int offset)
-        => CheckGameObjectItem(_pluginServiceFactory.Create<GameGui>().FindAgentInterface(name), offset);
+        => CheckGameObjectItem(_pluginServiceFactory.Create<IGameGui>().FindAgentInterface(name), offset);
 
     private unsafe GameObjectContextMenuItem CheckGameObjectItem(nint agent, int offset)
     {
@@ -96,7 +99,7 @@ public class ContextMenu : IServiceType, IDisposable
 
     private unsafe nint AgentById(AgentId id)
     {
-        var uiModule = (UIModule*)_pluginServiceFactory.Create<GameGui>().GetUIModule();
+        var uiModule = (UIModule*)_pluginServiceFactory.Create<IGameGui>().GetUIModule();
         if (uiModule is null) return nint.Zero;
         var agents = uiModule->GetAgentModule();
         if (agents is null) return nint.Zero;

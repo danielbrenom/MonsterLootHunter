@@ -5,10 +5,9 @@
   "Description": "Check where you can obtain a material from monsters, duties, crafting, gathering or where they can be bought from NPCs.",
   "InternalName": "monsterLootHunter",
   "ApplicableVersion": "any",
-  "Changelog": "- Patch 6.4 update",
-  "AssemblyVersion": "1.0.17.4",
+  "Changelog": "- Patch 6.5 update\n- Dalamud API update",
+  "AssemblyVersion": "1.0.18.4",
   "RepoUrl": "https://github.com/danielbrenom/MonsterLootHunter",
-  "DalamudApiLevel": 8,
   "Tags": [
     "material",
     "monster",
