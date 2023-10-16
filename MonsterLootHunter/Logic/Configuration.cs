@@ -1,5 +1,4 @@
-﻿using System;
-using Dalamud;
+﻿using Dalamud;
 using Dalamud.Configuration;
 using Dalamud.Plugin;
 
@@ -7,9 +6,10 @@ namespace MonsterLootHunter.Logic;
 
 public class Configuration : IPluginConfiguration
 {
-    public int Version { get; set; } = 114;
+    public int Version { get; set; } = 194;
     public bool ContextMenuIntegration { get; set; } = true;
     public bool UseLegacyViewer { get; set; }
+    public string PluginLanguage { get; set; }
     private bool ClientUsingAnotherLanguage { get; set; }
 
     [NonSerialized] private DalamudPluginInterface _pluginInterface;

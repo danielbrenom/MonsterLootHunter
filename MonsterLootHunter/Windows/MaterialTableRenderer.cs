@@ -1,5 +1,4 @@
-﻿using System.Collections.Generic;
-using System.Linq;
+﻿using System.Linq.Expressions;
 using System.Numerics;
 using Dalamud.Interface;
 using ImGuiNET;
@@ -13,12 +12,18 @@ public class MaterialTableRenderer
     private readonly MapManagerService _mapManagerService;
     private readonly float _scale;
     private readonly Vector2 _textSize;
+    private Func<LootDrops, object> _sortPropFunc;
+    private Func<LootPurchase, object> _sortVendorPropFunc;
+    private ImGuiSortDirection _sortDirection;
+    private ImGuiSortDirection _sortVendorDirection;
 
     public MaterialTableRenderer(MapManagerService mapManagerService, float scale, Vector2 textSize)
     {
         _mapManagerService = mapManagerService;
         _scale = scale;
         _textSize = textSize;
+        _sortDirection = ImGuiSortDirection.Ascending;
+        _sortVendorDirection = ImGuiSortDirection.Ascending;
     }
 
     public void RenderMobTable(IList<LootDrops> mobList)
@@ -31,14 +36,38 @@ public class MaterialTableRenderer
             return;
         }
 
-        if (ImGui.BeginTable("MLH_ObtainedFromTable", 4, ImGuiTableFlags.ScrollY | ImGuiTableFlags.RowBg | ImGuiTableFlags.Borders | ImGuiTableFlags.NoHostExtendX,
+        if (ImGui.BeginTable("MLH_ObtainedFromTable", 5, ImGuiTableFlags.ScrollY | ImGuiTableFlags.RowBg | ImGuiTableFlags.Borders | ImGuiTableFlags.NoHostExtendX | ImGuiTableFlags.Reorderable | ImGuiTableFlags.Sortable,
                              new Vector2(0f, _textSize.Y * 13)))
         {
-            ImGui.TableSetupColumn("Name", ImGuiTableColumnFlags.WidthFixed, 200.0f);
-            ImGui.TableSetupColumn("Location", ImGuiTableColumnFlags.WidthFixed, 230.0f);
-            ImGui.TableSetupColumn("Position", ImGuiTableColumnFlags.WidthFixed, 100.0f);
-            ImGui.TableSetupColumn("Actions", ImGuiTableColumnFlags.WidthFixed, 40.0f);
+            ImGui.TableSetupScrollFreeze(0,1);
+            ImGui.TableSetupColumn("Name", ImGuiTableColumnFlags.WidthFixed | ImGuiTableColumnFlags.NoSort, 200.0f, (uint)LootSortId.Name);
+            ImGui.TableSetupColumn("Level", ImGuiTableColumnFlags.WidthFixed | ImGuiTableColumnFlags.NoSort, 50.0f, (uint)LootSortId.Level);
+            ImGui.TableSetupColumn("Location", ImGuiTableColumnFlags.WidthFixed | ImGuiTableColumnFlags.DefaultSort, 230.0f, (uint)LootSortId.Location);
+            ImGui.TableSetupColumn("Position", ImGuiTableColumnFlags.WidthFixed | ImGuiTableColumnFlags.NoSort, 100.0f, (uint)LootSortId.Flag);
+            ImGui.TableSetupColumn("Actions", ImGuiTableColumnFlags.WidthFixed | ImGuiTableColumnFlags.NoSort, 40.0f, (uint)LootSortId.Action);
             ImGui.TableHeadersRow();
+            var tableSortSpecs = ImGui.TableGetSortSpecs();
+            if (tableSortSpecs.SpecsDirty)
+            {
+                //TODO: Check how to generate the whole expression not only the prop selector
+                var pExpression = Expression.Parameter(typeof(LootDrops));
+                _sortDirection = tableSortSpecs.Specs.SortDirection;
+                var expression = Enum.Parse<LootSortId>(tableSortSpecs.Specs.ColumnUserID.ToString()) switch
+                {
+                    LootSortId.Name => Expression.Lambda<Func<LootDrops, object>>(Expression.Property(pExpression, "MobName"), pExpression),
+                    LootSortId.Location => Expression.Lambda<Func<LootDrops, object>>(Expression.Property(pExpression, "MobLocation"), pExpression),
+                    LootSortId.Level => null,
+                    LootSortId.Flag => null,
+                    LootSortId.Action => null,
+                    _ => Expression.Lambda<Func<LootDrops, object>>(Expression.Property(pExpression, "MobName"), pExpression),
+                };
+                _sortPropFunc = expression?.Compile();
+
+                tableSortSpecs.SpecsDirty = false;
+            }
+
+            if (_sortPropFunc is not null)
+                mobList = _sortDirection == ImGuiSortDirection.Ascending ? mobList.OrderBy(_sortPropFunc).ToList() : mobList.OrderByDescending(_sortPropFunc).ToList();
 
             foreach (var mob in mobList)
             {
@@ -47,6 +76,8 @@ public class MaterialTableRenderer
                 ImGui.AlignTextToFramePadding();
                 ImGui.TableNextColumn();
                 ImGui.Text(mob.MobName);
+                ImGui.TableNextColumn();
+                ImGui.Text(mob.MobLevel);
                 ImGui.TableNextColumn();
                 ImGui.Text(mob.MobLocation);
                 ImGui.TableNextColumn();
@@ -86,10 +117,13 @@ public class MaterialTableRenderer
         ImGui.Columns(4, "ObtainedFrom_LegacyColumns");
         ImGui.SetColumnWidth(0, 200.0f);
         ImGui.SetColumnWidth(1, 230.0f);
-        ImGui.SetColumnWidth(2, 100.0f);
-        ImGui.SetColumnWidth(3, 40.0f);
+        ImGui.SetColumnWidth(2, 50.0f);
+        ImGui.SetColumnWidth(3, 100.0f);
+        ImGui.SetColumnWidth(4, 40.0f);
         ImGui.Separator();
         ImGui.Text("Name");
+        ImGui.NextColumn();
+        ImGui.Text("Level");
         ImGui.NextColumn();
         ImGui.Text("Location");
         ImGui.NextColumn();
@@ -102,6 +136,8 @@ public class MaterialTableRenderer
         {
             var index = mobList.IndexOf(mob);
             ImGui.Text(mob.MobName);
+            ImGui.NextColumn();
+            ImGui.Text(mob.MobLevel);
             ImGui.NextColumn();
             ImGui.Text(mob.MobLocation);
             ImGui.NextColumn();
@@ -132,14 +168,37 @@ public class MaterialTableRenderer
             return;
         }
 
-        if (ImGui.BeginTable("MLH_PurchasedFromTable", 4, ImGuiTableFlags.ScrollY | ImGuiTableFlags.RowBg | ImGuiTableFlags.Borders | ImGuiTableFlags.NoHostExtendX,
+        if (ImGui.BeginTable("MLH_PurchasedFromTable", 4, ImGuiTableFlags.ScrollY | ImGuiTableFlags.RowBg | ImGuiTableFlags.Borders | ImGuiTableFlags.NoHostExtendX | ImGuiTableFlags.Reorderable | ImGuiTableFlags.Sortable,
                              new Vector2(0f, _textSize.Y * 13)))
         {
-            ImGui.TableSetupColumn("Vendor", ImGuiTableColumnFlags.WidthFixed, 200f);
-            ImGui.TableSetupColumn("Location", ImGuiTableColumnFlags.WidthFixed, 150f);
-            ImGui.TableSetupColumn("Position", ImGuiTableColumnFlags.WidthFixed, 100f);
-            ImGui.TableSetupColumn("Price", ImGuiTableColumnFlags.WidthFixed, 200f);
+            ImGui.TableSetupScrollFreeze(0,1);
+            ImGui.TableSetupColumn("Vendor", ImGuiTableColumnFlags.WidthFixed | ImGuiTableColumnFlags.NoSort, 200f, (uint)LootSortId.Name);
+            ImGui.TableSetupColumn("Location", ImGuiTableColumnFlags.WidthFixed | ImGuiTableColumnFlags.DefaultSort, 150f, (uint)LootSortId.Location);
+            ImGui.TableSetupColumn("Position", ImGuiTableColumnFlags.WidthFixed | ImGuiTableColumnFlags.NoSort, 100f, (uint)LootSortId.Flag);
+            ImGui.TableSetupColumn("Price", ImGuiTableColumnFlags.WidthFixed | ImGuiTableColumnFlags.NoSort, 200f, (uint)LootSortId.Action);
             ImGui.TableHeadersRow();
+
+            var tableSortSpecs = ImGui.TableGetSortSpecs();
+            if (tableSortSpecs.SpecsDirty)
+            {
+                var pExpression = Expression.Parameter(typeof(LootPurchase));
+                _sortVendorDirection = tableSortSpecs.Specs.SortDirection;
+                var expression = Enum.Parse<LootSortId>(tableSortSpecs.Specs.ColumnUserID.ToString()) switch
+                {
+                    LootSortId.Name => Expression.Lambda<Func<LootPurchase, object>>(Expression.Property(pExpression, "Vendor"), pExpression),
+                    LootSortId.Location => Expression.Lambda<Func<LootPurchase, object>>(Expression.Property(pExpression, "Location"), pExpression),
+                    LootSortId.Level => null,
+                    LootSortId.Flag => null,
+                    LootSortId.Action => null,
+                    _ => Expression.Lambda<Func<LootPurchase, object>>(Expression.Property(pExpression, "Vendor"), pExpression),
+                };
+                _sortVendorPropFunc = expression?.Compile();
+
+                tableSortSpecs.SpecsDirty = false;
+            }
+
+            if (_sortVendorPropFunc is not null)
+                vendorList = _sortVendorDirection == ImGuiSortDirection.Ascending ? vendorList.OrderBy(_sortVendorPropFunc).ToList() : vendorList.OrderByDescending(_sortVendorPropFunc).ToList();
 
             foreach (var vendor in vendorList)
             {
@@ -173,7 +232,7 @@ public class MaterialTableRenderer
             ImGui.EndChild();
             return;
         }
-        
+
         ImGui.BeginChild("MLH_PurchasedFromTable_Legacy", new Vector2(0f, _textSize.Y * 13));
         ImGui.Columns(4, "purchasedFromColumns");
         ImGui.SetColumnWidth(2, 100.0f);

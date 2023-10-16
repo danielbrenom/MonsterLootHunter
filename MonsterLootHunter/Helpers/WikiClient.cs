@@ -1,35 +1,39 @@
-﻿using System;
-using System.Threading;
-using System.Threading.Tasks;
-using Dalamud;
+﻿using Dalamud;
 using HtmlAgilityPack;
 using MonsterLootHunter.Data;
 using MonsterLootHunter.Utils;
 
 namespace MonsterLootHunter.Helpers;
 
-public class ScrapperClient : IServiceType
+public class WikiClient : IServiceType
 {
     private readonly HtmlWeb _webClient;
-    private readonly ScrapperSanitizer _scrapperSanitizer;
+    private readonly WikiParser _wikiParser;
 
-    public ScrapperClient(ScrapperSanitizer scrapperSanitizer)
+    public WikiClient(WikiParser wikiParser)
     {
-        _scrapperSanitizer = scrapperSanitizer;
+        _wikiParser = wikiParser;
         _webClient = new HtmlWeb();
     }
 
     public async Task<LootData> GetLootData(string lootName, CancellationToken cancellationToken)
     {
+        if (_itemNameFix.TryGetValue(lootName, out var fixedName)) 
+            lootName = fixedName;
         var uri = new UriBuilder(string.Format(PluginConstants.WikiBaseUrl, lootName.Replace(" ", "_"))).ToString();
         var pageResponse = await _webClient.LoadFromWebAsync(uri, cancellationToken);
         try
         {
-            return await _scrapperSanitizer.ParseResponse(pageResponse, lootName).WaitAsync(cancellationToken);
+            return await _wikiParser.ParseResponse(pageResponse, lootName).WaitAsync(cancellationToken);
         }
         catch (Exception)
         {
             return new LootData(lootName);
         }
     }
+
+    private readonly Dictionary<string, string> _itemNameFix = new()
+    {
+        {"Blue Cheese", "Blue Cheese (Item)"}
+    };
 }

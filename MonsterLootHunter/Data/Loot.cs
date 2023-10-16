@@ -1,6 +1,4 @@
-﻿using System.Collections.Generic;
-
-namespace MonsterLootHunter.Data;
+﻿namespace MonsterLootHunter.Data;
 
 public class LootData
 {
@@ -20,6 +18,7 @@ public class LootDrops
 {
     public string MobName { get; set; }
     public string MobLocation { get; set; }
+    public string MobLevel { get; set; }
     public string MobFlag { get; set; }
 }
 
@@ -30,4 +29,13 @@ public class LootPurchase
     public string FlagPosition { get; set; }
     public string Cost { get; set; }
     public string CostType { get; set; }
+}
+
+public enum LootSortId
+{
+    Name = 1,
+    Location = 2,
+    Level = 3,
+    Flag = 4,
+    Action = 5
 }

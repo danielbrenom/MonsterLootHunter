@@ -1,8 +1,5 @@
-﻿using System;
-using System.Threading.Tasks;
-using Dalamud;
+﻿using Dalamud;
 using Dalamud.ContextMenu;
-using Dalamud.Game.Gui;
 using Dalamud.Game.Text.SeStringHandling;
 using Dalamud.Game.Text.SeStringHandling.Payloads;
 using Dalamud.Plugin;

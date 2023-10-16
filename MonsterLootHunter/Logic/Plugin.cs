@@ -1,5 +1,4 @@
-﻿using System;
-using Dalamud.Game.Command;
+﻿using Dalamud.Game.Command;
 using Dalamud.Plugin;
 using Dalamud.Plugin.Services;
 using Dalamud.Utility;
