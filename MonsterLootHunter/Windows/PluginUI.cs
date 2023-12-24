@@ -19,11 +19,11 @@ public class PluginUi : Window, IDisposable
     private readonly Configuration _configuration;
     private readonly MaterialTableRenderer _materialTableRenderer;
     private Item _selectedItem;
-    private IDalamudTextureWrap _selectedItemIcon;
+    private IDalamudTextureWrap? _selectedItemIcon;
     private List<KeyValuePair<ItemSearchCategory, List<Item>>> _enumerableCategoriesAndItems;
-    private LootData _lootData;
+    private LootData? _lootData;
     private readonly float _scale;
-    private readonly Vector2 itemTextSize;
+    private readonly Vector2 _itemTextSize;
     private readonly CancellationTokenSource _tokenSource;
     private bool Loading { get; set; }
 
@@ -48,12 +48,12 @@ public class PluginUi : Window, IDisposable
         _selectedItem = new Item();
         _tokenSource = new CancellationTokenSource();
         _scale = ImGui.GetIO().FontGlobalScale;
-        itemTextSize = ImGui.CalcTextSize(string.Empty);
-        _materialTableRenderer = new MaterialTableRenderer(_pluginServiceFactory.Create<MapManagerService>(), _scale, itemTextSize);
+        _itemTextSize = ImGui.CalcTextSize(string.Empty);
+        _materialTableRenderer = new MaterialTableRenderer(_pluginServiceFactory.Create<MapManagerService>(), _scale, _itemTextSize);
         SizeConstraints = new WindowSizeConstraints
         {
-            MinimumSize = new Vector2(800, 600) * _scale,
-            MaximumSize = new Vector2(800, 600) * _scale * 1.5f
+            MinimumSize = new Vector2(800, 600) * _scale * _configuration.MinimumWindowScale,
+            MaximumSize = new Vector2(800, 600) * _scale * _configuration.MaximumWindowScale
         };
         SizeCondition = ImGuiCond.FirstUseEver;
         _enumerableCategoriesAndItems = new List<KeyValuePair<ItemSearchCategory, List<Item>>>();
@@ -64,7 +64,7 @@ public class PluginUi : Window, IDisposable
         LoadCategoryItemList();
         try
         {
-            ImGui.BeginChild("lootListColumn", new Vector2(267, 0) * _scale, true);
+            ImGui.BeginChild("lootListColumn", new Vector2(250, 0) * _scale, true);
             ImGui.SetNextItemWidth(ImGui.GetIO().FontGlobalScale - ImGui.GetStyle().ItemSpacing.X);
             ImGui.InputTextWithHint("##searchString", "Search for loot", ref _searchString, 256);
             ImGui.Separator();
@@ -79,12 +79,12 @@ public class PluginUi : Window, IDisposable
 
                 for (var i = 0; i < items.Count; i++)
                 {
-                    if (ImGui.GetCursorPosY() < ImGui.GetScrollY() - itemTextSize.Y)
+                    if (ImGui.GetCursorPosY() < ImGui.GetScrollY() - _itemTextSize.Y)
                     {
                         // Don't draw items above the scroll region.
                         var y = ImGui.GetCursorPosY();
-                        var sy = ImGui.GetScrollY() - itemTextSize.Y;
-                        var spacing = itemTextSize.Y + ImGui.GetStyle().ItemSpacing.Y;
+                        var sy = ImGui.GetScrollY() - _itemTextSize.Y;
+                        var spacing = _itemTextSize.Y + ImGui.GetStyle().ItemSpacing.Y;
                         var c = items.Count;
                         while (i < c && y < sy)
                         {
@@ -100,7 +100,7 @@ public class PluginUi : Window, IDisposable
                     {
                         // Don't draw item names below the scroll region
                         var remainingItems = items.Count - i;
-                        var remainingItemsHeight = itemTextSize.Y * remainingItems;
+                        var remainingItemsHeight = _itemTextSize.Y * remainingItems;
                         var remainingGapHeight = ImGui.GetStyle().ItemSpacing.Y * (remainingItems - 1);
                         ImGui.Dummy(new Vector2(1, remainingItemsHeight + remainingGapHeight));
                         break;
@@ -164,7 +164,7 @@ public class PluginUi : Window, IDisposable
 
                 ImGui.SameLine();
                 ImGui.SetCursorPosY(ImGui.GetCursorPosY() - ImGui.GetFontSize() / 2.0f + 19 * _scale);
-                ImGui.Text(_selectedItem?.Name ?? string.Empty);
+                ImGui.Text(_selectedItem.Name ?? string.Empty);
                 if (Loading)
                 {
                     ImGui.SameLine();
@@ -218,7 +218,8 @@ public class PluginUi : Window, IDisposable
     {
         var shouldPerformSearch = !_enumerableCategoriesAndItems.Any() || _searchString != _lastSearchString;
         //Prevent loading the list on every draw if it's not necessary
-        if (!shouldPerformSearch) return;
+        if (!shouldPerformSearch)
+            return;
         (_enumerableCategoriesAndItems, _lastSearchString) =
             _pluginServiceFactory.Create<ItemManagerService>().GetEnumerableItems(_searchString, _searchString != _lastSearchString);
     }
@@ -252,7 +253,7 @@ public class PluginUi : Window, IDisposable
     public void Dispose()
     {
         _selectedItemIcon?.Dispose();
-        _tokenSource?.Dispose();
+        _tokenSource.Dispose();
         GC.SuppressFinalize(this);
     }
 }

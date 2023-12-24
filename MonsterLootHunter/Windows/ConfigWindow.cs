@@ -8,8 +8,10 @@ namespace MonsterLootHunter.Windows;
 
 public class ConfigWindow : Window, IDisposable
 {
-    private Configuration _configuration;
+    private readonly Configuration _configuration;
     private readonly float _scale;
+    private float _minScale;
+    private float _maxScale;
     private bool _contextIntegration;
     private bool _legacyViewer;
 
@@ -24,17 +26,33 @@ public class ConfigWindow : Window, IDisposable
             MaximumSize = new Vector2(250, 150) * _scale * 1.5f
         };
         SizeCondition = ImGuiCond.FirstUseEver;
+        CheckConfiguration();
+    }
+
+    private void CheckConfiguration()
+    {
+        _contextIntegration = _configuration.ContextMenuIntegration;
+        _legacyViewer = _configuration.UseLegacyViewer;
+        _minScale = Math.Min(_configuration.MinimumWindowScale, 1f);
+        _maxScale = Math.Min(_configuration.MaximumWindowScale, 2f);
     }
 
     public override void Draw()
     {
-        _contextIntegration = _configuration.ContextMenuIntegration;
-        _legacyViewer = _configuration.UseLegacyViewer;
-        ImGui.BeginChild("configurations", new Vector2(250, -1f) * _scale);
+        ImGui.BeginChild("configurations", new Vector2(0, -1f) * _scale);
         if (ImGui.Checkbox("Context menu integration", ref _contextIntegration))
             _configuration.ContextMenuIntegration = _contextIntegration;
         if(ImGui.Checkbox("Use legacy viewer", ref _legacyViewer))
             _configuration.UseLegacyViewer = _legacyViewer;
+
+        ImGui.Text("Window scale values");
+        ImGui.Text("Minimum size scale");
+        ImGui.SameLine();
+        ImGui.DragFloat("##min_size", ref _minScale, 0.5f, 0.5f, 1f, "%.1f", ImGuiSliderFlags.None);
+        ImGui.Text("Maximum size scale");
+        ImGui.SameLine();
+        ImGui.DragFloat("##max_size", ref _maxScale, 0.5f, 1.5f, 2f, "%.1f", ImGuiSliderFlags.None);
+        ImGui.TextColored(new Vector4(153f, 56f, 56f, 1.0f), "Reload plugin for scales to take effect");
 
         if (ImGui.Button("Save and close"))
             IsOpen = false;
@@ -44,6 +62,8 @@ public class ConfigWindow : Window, IDisposable
 
     public override void OnClose()
     {
+        _configuration.MinimumWindowScale = _minScale;
+        _configuration.MaximumWindowScale = _maxScale;
         _configuration.Save();
         base.OnClose();
     }

@@ -9,10 +9,12 @@ public class Configuration : IPluginConfiguration
     public int Version { get; set; } = 194;
     public bool ContextMenuIntegration { get; set; } = true;
     public bool UseLegacyViewer { get; set; }
-    public string PluginLanguage { get; set; }
     private bool ClientUsingAnotherLanguage { get; set; }
+    public string? PluginLanguage { get; set; }
+    public float MinimumWindowScale { get; set; } = 1f;
+    public float MaximumWindowScale { get; set; } = 1.5f;
 
-    [NonSerialized] private DalamudPluginInterface _pluginInterface;
+    [NonSerialized] private DalamudPluginInterface? _pluginInterface;
 
     public void Initialize(DalamudPluginInterface pluginInterface, ClientLanguage language)
     {

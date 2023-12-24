@@ -8,31 +8,32 @@ namespace MonsterLootHunter.Helpers
 {
     public partial class WikiParser
     {
-        private LootData LootData { get; set; }
-
-        [GeneratedRegex("(\\d+\\.?\\d*)")]
+        [GeneratedRegex(@"(\d+\.?\d*)")]
         private static partial Regex CoordinatesRegex();
 
         [GeneratedRegex("\\d+")]
         private static partial Regex LevelRegex();
 
-        [GeneratedRegex("(\\d{1,2}:\\d{1,2}\\s(?:am|pm))", RegexOptions.IgnoreCase)]
+        [GeneratedRegex(@"(\d{1,2}:\d{1,2}\s(?:am|pm))", RegexOptions.IgnoreCase)]
         private static partial Regex GatherTimeRegex();
+        
+        [GeneratedRegex("(?:patch)|(?:tree)|(?:logging)|(?:quarry)|(?:harves)|(?:mining)", RegexOptions.IgnoreCase | RegexOptions.Compiled, "pt-BR")]
+        private static partial Regex LocationNameRegex();
 
         public Task<LootData> ParseResponse(HtmlDocument document, string lootName)
         {
-            LootData = new LootData(lootName);
+            var lootData = new LootData(lootName);
             var body = document.DocumentNode.QuerySelector("div#bodyContent");
             var bodyContent = body.QuerySelector("div.mw-content-ltr div.mw-parser-output");
-            LootData.LootLocations.AddRange(GetDutyDrops(bodyContent));
-            LootData.LootLocations.AddRange(GetMonsterDropsFromTable(bodyContent));
-            LootData.LootLocations.AddRange(GetPossibleRecipe(bodyContent));
-            LootData.LootLocations.AddRange(GetPossibleTreasureHunts(bodyContent));
-            LootData.LootLocations.AddRange(GetPossibleDesynthesis(bodyContent));
-            LootData.LootLocations.AddRange(GetPossibleGathering(bodyContent));
-            LootData.LootLocations.AddRange(GetPossibleGatheringTable(bodyContent));
-            LootData.LootPurchaseLocations.AddRange(GetVendorPurchases(bodyContent));
-            return Task.FromResult(LootData);
+            lootData.LootLocations.AddRange(GetDutyDrops(bodyContent));
+            lootData.LootLocations.AddRange(GetMonsterDropsFromTable(bodyContent));
+            lootData.LootLocations.AddRange(GetPossibleRecipe(bodyContent));
+            lootData.LootLocations.AddRange(GetPossibleTreasureHunts(bodyContent));
+            lootData.LootLocations.AddRange(GetPossibleDesynthesis(bodyContent));
+            lootData.LootLocations.AddRange(GetPossibleGathering(bodyContent));
+            lootData.LootLocations.AddRange(GetPossibleGatheringTable(bodyContent));
+            lootData.LootPurchaseLocations.AddRange(GetVendorPurchases(bodyContent));
+            return Task.FromResult(lootData);
         }
 
         private static IEnumerable<LootDrops> GetDutyDrops(HtmlNode node)
@@ -51,7 +52,8 @@ namespace MonsterLootHunter.Helpers
                     MobName = "Duty",
                     MobLocation = Regex.Replace(duty, @"&#.+;", string.Empty),
                     MobFlag = string.Empty,
-                    MobLevel = string.Empty
+                    MobLevel = string.Empty,
+                    Type = MaterialType.General
                 });
             }
             catch (Exception)
@@ -76,7 +78,8 @@ namespace MonsterLootHunter.Helpers
                                     MobName = data.info.TryGet(nodes => nodes[0].InnerText).Replace("\n", ""),
                                     MobLocation = data.info.TryGet(nodes => nodes.Last().InnerText).Split("(")[0].Replace("\n", "").TrimEnd(),
                                     MobFlag = data.flagParsed.Any() ? $"({data.flagParsed[0]},{data.flagParsed[1]})" : string.Empty,
-                                    MobLevel = data.info.TryGet(nodes => nodes[1].InnerText).Replace("\n", "")
+                                    MobLevel = data.info.TryGet(nodes => nodes[1].InnerText).Replace("\n", ""),
+                                    Type = MaterialType.Material
                                 });
             }
             catch (Exception)
@@ -130,7 +133,8 @@ namespace MonsterLootHunter.Helpers
                         MobName = $"Crafter Class: {recipeData.TryGet(nodes => nodes[2].QuerySelectorAll("a").ToList()[1].InnerText)}",
                         MobLocation = string.Empty,
                         MobFlag = string.Empty,
-                        MobLevel = recipeData.TryGet(nodes => nodes[3].InnerText)
+                        MobLevel = recipeData.TryGet(nodes => nodes[3].InnerText),
+                        Type = MaterialType.General
                     }
                 };
             }
@@ -155,7 +159,8 @@ namespace MonsterLootHunter.Helpers
                     MobName = "Treasure Map",
                     MobLocation = treasureMap.QuerySelectorAll("a").ToList().Last().InnerText,
                     MobFlag = string.Empty,
-                    MobLevel = string.Empty
+                    MobLevel = string.Empty,
+                    Type = MaterialType.General
                 });
             }
             catch (Exception)
@@ -180,7 +185,8 @@ namespace MonsterLootHunter.Helpers
                     MobName = "Desynthesis",
                     MobLocation = treasureMap.QuerySelectorAll("a").ToList().Last().InnerText,
                     MobFlag = string.Empty,
-                    MobLevel = string.Empty
+                    MobLevel = string.Empty,
+                    Type = MaterialType.Material
                 });
             }
             catch (Exception)
@@ -219,14 +225,16 @@ namespace MonsterLootHunter.Helpers
                     var flag = anchors.LastOrDefault()?.NextSibling.InnerText ?? string.Empty;
                     var flagParsed = CoordinatesRegex().Matches(flag);
                     var gatherTime = GatherTimeRegex().Matches(node.InnerText ?? string.Empty).FirstOrDefault()?.Value ?? string.Empty;
+                    var locationName = anchors.First(text => !LocationNameRegex().Match(text.InnerText).Success).InnerText;
                     return new[]
                     {
                         new LootDrops
                         {
                             MobName = anchors.First().InnerText,
-                            MobLocation = $"{anchors[1].InnerText}-{anchors.Last().InnerText}-{gatherTime}",
+                            MobLocation = $"{locationName}-{anchors.Last().InnerText}-{gatherTime}",
                             MobFlag = flagParsed.Any() ? $"({flagParsed[0].Value},{flagParsed[1].Value})" : string.Empty,
-                            MobLevel = LevelRegex().Matches(gatheredNode.ChildNodes.First().InnerText).FirstOrDefault()?.Value
+                            MobLevel = LevelRegex().Matches(gatheredNode.ChildNodes.First().InnerText).FirstOrDefault()?.Value ?? string.Empty,
+                            Type = MaterialType.Gatherable
                         }
                     };
                 }
@@ -236,17 +244,19 @@ namespace MonsterLootHunter.Helpers
                     let anchors = gatherNode.QuerySelectorAll("a").ToList()
                     let flag = anchors.LastOrDefault()?.NextSibling.InnerText ?? string.Empty
                     let flagParsed = CoordinatesRegex().Matches(flag)
+                    let locationName = anchors.First(text => !LocationNameRegex().Match(text.InnerText).Success).InnerText
                     select new LootDrops
                     {
                         MobName = anchors.First().InnerText,
-                        MobLocation = $"{anchors[1].InnerText}-{anchors.Last().InnerText}",
+                        MobLocation = $"{locationName}-{anchors.Last().InnerText}",
                         MobFlag = flagParsed.Any() ? $"({flagParsed[0].Value},{flagParsed[1].Value})" : string.Empty,
-                        MobLevel = LevelRegex().Matches(gatherNode.ChildNodes.First().InnerText).FirstOrDefault()?.Value
+                        MobLevel = LevelRegex().Matches(gatherNode.ChildNodes.First().InnerText).FirstOrDefault()?.Value,
+                        Type = MaterialType.Gatherable
                     };
 
                 IEnumerable<LootDrops> AetherialReduction(IEnumerable<HtmlNode> reductionList) =>
                     reductionList.Select(htmlNode => htmlNode.QuerySelectorAll("a").Last())
-                                 .Select(itemName => new LootDrops { MobName = itemName.InnerText, MobLocation = "Aetherial Reuction", MobFlag = string.Empty, MobLevel = string.Empty });
+                                 .Select(itemName => new LootDrops { MobName = itemName.InnerText, MobLocation = "Aetherial Reduction", MobFlag = string.Empty, MobLevel = string.Empty });
             }
             catch (Exception)
             {
@@ -274,7 +284,8 @@ namespace MonsterLootHunter.Helpers
                         MobName = columns.TryGet(nodes => nodes[0].ChildNodes[1].InnerText),
                         MobLocation = columns.TryGet(nodes => nodes[1].QuerySelector("a").InnerText),
                         MobFlag = flagParsed.Any() ? $"({flagParsed[0].Value},{flagParsed[1].Value})" : string.Empty,
-                        MobLevel =  columns.TryGet(nodes => nodes[2].ChildNodes[0].InnerText)
+                        MobLevel =  columns.TryGet(nodes => nodes[2].ChildNodes[0].InnerText),
+                        Type = MaterialType.Gatherable
                     };
             }
             catch (Exception)
@@ -282,5 +293,7 @@ namespace MonsterLootHunter.Helpers
                 return Enumerable.Empty<LootDrops>();
             }
         }
+
+        
     }
 }

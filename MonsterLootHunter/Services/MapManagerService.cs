@@ -14,7 +14,7 @@ public partial class MapManagerService : IServiceType
 {
     [GeneratedRegex("(\\d+\\.?\\d*)")]
     private static partial Regex CoordinatesRegex();
-    
+
     private readonly IGameGui _gameGui;
     private readonly IPluginLog _pluginLog;
     private List<TerritoryType> CachedTerritories { get; }
@@ -23,16 +23,22 @@ public partial class MapManagerService : IServiceType
     {
         _gameGui = gameGui;
         _pluginLog = pluginLog;
-        CachedTerritories = dataManager.GetExcelSheet<TerritoryType>()?.ToList();
+        CachedTerritories = dataManager.GetExcelSheet<TerritoryType>()?.ToList() ?? new List<TerritoryType>();
     }
-    
-    public void MarkMapFlag(string locationName, string position)
+
+    public bool CheckLocation(string locationName, out TerritoryType? territoryType)
+    {
+        locationName = locationName.Contains('-') ? locationName.Split('-')[0] : locationName;
+        territoryType = CachedTerritories.FirstOrDefault(t => t.PlaceName.Value != null && t.PlaceName.Value.Name.ToString().ToLowerInvariant().Contains(locationName.ToLowerInvariant()));
+        return territoryType is not null;
+    }
+
+    public void MarkMapFlag(TerritoryType? location, string position)
     {
         try
         {
-            locationName = locationName.Contains('-') ? locationName.Split('-')[0] : locationName;
-            var location = CachedTerritories.FirstOrDefault(t => t.PlaceName.Value != null && t.PlaceName.Value.Name.ToString().ToLowerInvariant().Contains(locationName.ToLowerInvariant()));
-            if (location is null) return;
+            if (location is null)
+                return;
             var flagParsed = CoordinatesRegex().Matches(position);
             var coords = new float[2];
             coords[0] = float.Parse(flagParsed[0].Value, CultureInfo.InvariantCulture);
@@ -42,7 +48,7 @@ public partial class MapManagerService : IServiceType
         }
         catch (Exception e)
         {
-            _pluginLog.Error($"Not able to mark location {locationName} on map. With error: {e.Message}");
+            _pluginLog.Error($"Not able to mark location {location.Name} on map. With error: {e.Message}");
         }
     }
 }

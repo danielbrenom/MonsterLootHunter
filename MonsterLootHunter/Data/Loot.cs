@@ -16,19 +16,20 @@ public class LootData
 
 public class LootDrops
 {
-    public string MobName { get; set; }
-    public string MobLocation { get; set; }
-    public string MobLevel { get; set; }
-    public string MobFlag { get; set; }
+    public string MobName { get; set; } = string.Empty;
+    public string MobLocation { get; set; } = string.Empty;
+    public string MobLevel { get; set; } = string.Empty;
+    public string MobFlag { get; set; } = string.Empty;
+    public MaterialType Type { get; set; }
 }
 
 public class LootPurchase
 {
-    public string Vendor { get; set; }
-    public string Location { get; set; }
-    public string FlagPosition { get; set; }
-    public string Cost { get; set; }
-    public string CostType { get; set; }
+    public string Vendor { get; set; } = string.Empty;
+    public string Location { get; set; } = string.Empty;
+    public string FlagPosition { get; set; } = string.Empty;
+    public string Cost { get; set; } = string.Empty;
+    public string CostType { get; set; } = string.Empty;
 }
 
 public enum LootSortId

@@ -12,8 +12,8 @@ public class MaterialTableRenderer
     private readonly MapManagerService _mapManagerService;
     private readonly float _scale;
     private readonly Vector2 _textSize;
-    private Func<LootDrops, object> _sortPropFunc;
-    private Func<LootPurchase, object> _sortVendorPropFunc;
+    private Func<LootDrops, object>? _sortPropFunc;
+    private Func<LootPurchase, object>? _sortVendorPropFunc;
     private ImGuiSortDirection _sortDirection;
     private ImGuiSortDirection _sortVendorDirection;
 
@@ -26,7 +26,7 @@ public class MaterialTableRenderer
         _sortVendorDirection = ImGuiSortDirection.Ascending;
     }
 
-    public void RenderMobTable(IList<LootDrops> mobList)
+    public void RenderMobTable(IList<LootDrops>? mobList)
     {
         if (mobList is null || !mobList.Any())
         {
@@ -36,15 +36,15 @@ public class MaterialTableRenderer
             return;
         }
 
-        if (ImGui.BeginTable("MLH_ObtainedFromTable", 5, ImGuiTableFlags.ScrollY | ImGuiTableFlags.RowBg | ImGuiTableFlags.Borders | ImGuiTableFlags.NoHostExtendX | ImGuiTableFlags.Reorderable | ImGuiTableFlags.Sortable,
+        if (ImGui.BeginTable("MLH_ObtainedFromTable", 5, ImGuiTableFlags.ScrollY | ImGuiTableFlags.RowBg | ImGuiTableFlags.Borders | ImGuiTableFlags.NoHostExtendX | ImGuiTableFlags.Reorderable | ImGuiTableFlags.Sortable | ImGuiTableFlags.Resizable,
                              new Vector2(0f, _textSize.Y * 13)))
         {
             ImGui.TableSetupScrollFreeze(0,1);
-            ImGui.TableSetupColumn("Name", ImGuiTableColumnFlags.WidthFixed | ImGuiTableColumnFlags.NoSort, 200.0f, (uint)LootSortId.Name);
-            ImGui.TableSetupColumn("Level", ImGuiTableColumnFlags.WidthFixed | ImGuiTableColumnFlags.NoSort, 50.0f, (uint)LootSortId.Level);
-            ImGui.TableSetupColumn("Location", ImGuiTableColumnFlags.WidthFixed | ImGuiTableColumnFlags.DefaultSort, 230.0f, (uint)LootSortId.Location);
-            ImGui.TableSetupColumn("Position", ImGuiTableColumnFlags.WidthFixed | ImGuiTableColumnFlags.NoSort, 100.0f, (uint)LootSortId.Flag);
-            ImGui.TableSetupColumn("Actions", ImGuiTableColumnFlags.WidthFixed | ImGuiTableColumnFlags.NoSort, 40.0f, (uint)LootSortId.Action);
+            ImGui.TableSetupColumn("Name", ImGuiTableColumnFlags.NoSort, 150.0f, (uint)LootSortId.Name);
+            ImGui.TableSetupColumn("Level", ImGuiTableColumnFlags.NoSort, 50.0f, (uint)LootSortId.Level);
+            ImGui.TableSetupColumn("Location", ImGuiTableColumnFlags.DefaultSort, 150.0f, (uint)LootSortId.Location);
+            ImGui.TableSetupColumn("Position", ImGuiTableColumnFlags.NoSort, 80.0f, (uint)LootSortId.Flag);
+            ImGui.TableSetupColumn("Actions", ImGuiTableColumnFlags.NoSort, 40.0f, (uint)LootSortId.Action);
             ImGui.TableHeadersRow();
             var tableSortSpecs = ImGui.TableGetSortSpecs();
             if (tableSortSpecs.SpecsDirty)
@@ -83,11 +83,11 @@ public class MaterialTableRenderer
                 ImGui.TableNextColumn();
                 ImGui.Text(mob.MobFlag);
                 ImGui.TableNextColumn();
-                if (!string.IsNullOrEmpty(mob.MobFlag) && mob.MobFlag != "N/A")
+                if (!string.IsNullOrEmpty(mob.MobFlag) && mob.MobFlag != "N/A" && _mapManagerService.CheckLocation(mob.MobLocation, out var location))
                 {
                     ImGui.PushFont(UiBuilder.IconFont);
                     if (ImGui.Button($"{(char)FontAwesomeIcon.MapMarkerAlt}##listing{index}", new Vector2(25 * _scale, _textSize.Y * _scale * 1.5f)))
-                        _mapManagerService.MarkMapFlag(mob.MobLocation, mob.MobFlag);
+                        _mapManagerService.MarkMapFlag(location, mob.MobFlag);
 
                     ImGui.PopFont();
                 }
@@ -103,7 +103,7 @@ public class MaterialTableRenderer
         }
     }
 
-    public void RenderLegacyMobTable(IList<LootDrops> mobList)
+    public void RenderLegacyMobTable(IList<LootDrops>? mobList)
     {
         if (mobList is null || !mobList.Any())
         {
@@ -143,11 +143,11 @@ public class MaterialTableRenderer
             ImGui.NextColumn();
             ImGui.Text(mob.MobFlag);
             ImGui.NextColumn();
-            if (!string.IsNullOrEmpty(mob.MobFlag) && mob.MobFlag != "N/A")
+            if (!string.IsNullOrEmpty(mob.MobFlag) && mob.MobFlag != "N/A" && _mapManagerService.CheckLocation(mob.MobLocation, out var location))
             {
                 ImGui.PushFont(UiBuilder.IconFont);
                 if (ImGui.Button($"{(char)FontAwesomeIcon.MapMarkerAlt}##listing{index}", new Vector2(25 * _scale, ImGui.GetItemRectSize().Y * _scale)))
-                    _mapManagerService.MarkMapFlag(mob.MobLocation, mob.MobFlag);
+                    _mapManagerService.MarkMapFlag(location, mob.MobFlag);
                 ImGui.PopFont();
             }
 
@@ -158,7 +158,7 @@ public class MaterialTableRenderer
         ImGui.EndChild();
     }
 
-    public void RenderVendorTable(IList<LootPurchase> vendorList)
+    public void RenderVendorTable(IList<LootPurchase>? vendorList)
     {
         if (vendorList is null || !vendorList.Any())
         {
@@ -168,7 +168,7 @@ public class MaterialTableRenderer
             return;
         }
 
-        if (ImGui.BeginTable("MLH_PurchasedFromTable", 4, ImGuiTableFlags.ScrollY | ImGuiTableFlags.RowBg | ImGuiTableFlags.Borders | ImGuiTableFlags.NoHostExtendX | ImGuiTableFlags.Reorderable | ImGuiTableFlags.Sortable,
+        if (ImGui.BeginTable("MLH_PurchasedFromTable", 4, ImGuiTableFlags.ScrollY | ImGuiTableFlags.RowBg | ImGuiTableFlags.Borders | ImGuiTableFlags.NoHostExtendX | ImGuiTableFlags.Reorderable | ImGuiTableFlags.Sortable | ImGuiTableFlags.Resizable,
                              new Vector2(0f, _textSize.Y * 13)))
         {
             ImGui.TableSetupScrollFreeze(0,1);
@@ -223,7 +223,7 @@ public class MaterialTableRenderer
         }
     }
 
-    public void RenderLegacyVendorTable(IList<LootPurchase> vendorList)
+    public void RenderLegacyVendorTable(IList<LootPurchase>? vendorList)
     {
         if (vendorList is null || !vendorList.Any())
         {

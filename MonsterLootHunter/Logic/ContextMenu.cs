@@ -39,14 +39,17 @@ public class ContextMenu : IServiceType, IDisposable
 
     private void AddInventoryItem(InventoryContextMenuOpenArgs args)
     {
-        if (!_pluginServiceFactory.Create<Configuration>().ContextMenuIntegration) return;
+        if (!_pluginServiceFactory.Create<Configuration>().ContextMenuIntegration)
+            return;
         var menuItem = CheckItem(args.ItemId);
-        if (menuItem != null) args.AddCustomItem(menuItem);
+        if (menuItem != null)
+            args.AddCustomItem(menuItem);
     }
 
     private void AddGameObjectItem(GameObjectContextMenuOpenArgs args)
     {
-        if (!_pluginServiceFactory.Create<Configuration>().ContextMenuIntegration) return;
+        if (!_pluginServiceFactory.Create<Configuration>().ContextMenuIntegration)
+            return;
         var item = args.ParentAddonName switch
         {
             null => null,
@@ -57,15 +60,18 @@ public class ContextMenu : IServiceType, IDisposable
             _ => null
         };
 
-        if (item != null) args.AddCustomItem(item);
+        if (item != null)
+            args.AddCustomItem(item);
     }
 
-    private InventoryContextMenuItem CheckItem(uint itemId)
+    private InventoryContextMenuItem? CheckItem(uint itemId)
     {
         var pluginWindow = _pluginServiceFactory.Create<WindowService>().GetWindow(WindowConstants.MainWindowName);
-        if (pluginWindow is not PluginUi window) return null;
+        if (pluginWindow is not PluginUi window)
+            return null;
         itemId = itemId > 500000 ? itemId - 500000 : itemId;
-        if (!_pluginServiceFactory.Create<ItemManagerService>().CheckSelectedItem(itemId)) return null;
+        if (!_pluginServiceFactory.Create<ItemManagerService>().CheckSelectedItem(itemId))
+            return null;
         return new InventoryContextMenuItem(SearchString, _ =>
         {
             window.IsOpen = true;
@@ -73,20 +79,20 @@ public class ContextMenu : IServiceType, IDisposable
         }, true);
     }
 
-    private GameObjectContextMenuItem CheckGameObjectItem(string name, int offset)
+    private GameObjectContextMenuItem? CheckGameObjectItem(string name, int offset)
         => CheckGameObjectItem(_pluginServiceFactory.Create<IGameGui>().FindAgentInterface(name), offset);
 
-    private unsafe GameObjectContextMenuItem CheckGameObjectItem(nint agent, int offset)
-    {
-        return agent != nint.Zero ? CheckGameObjectItem(*(uint*)(agent + offset)) : null;
-    }
+    private unsafe GameObjectContextMenuItem? CheckGameObjectItem(nint agent, int offset)
+        => agent != nint.Zero ? CheckGameObjectItem(*(uint*)(agent + offset)) : null;
 
-    private GameObjectContextMenuItem CheckGameObjectItem(uint itemId)
+    private GameObjectContextMenuItem? CheckGameObjectItem(uint itemId)
     {
         var pluginWindow = _pluginServiceFactory.Create<WindowService>().GetWindow(WindowConstants.MainWindowName);
-        if (pluginWindow is not PluginUi window) return null;
+        if (pluginWindow is not PluginUi window)
+            return null;
         itemId = itemId > 500000 ? itemId - 500000 : itemId;
-        if (!_pluginServiceFactory.Create<ItemManagerService>().CheckSelectedItem(itemId)) return null;
+        if (!_pluginServiceFactory.Create<ItemManagerService>().CheckSelectedItem(itemId))
+            return null;
         return new GameObjectContextMenuItem(SearchString, _ =>
         {
             window.IsOpen = true;
@@ -97,9 +103,11 @@ public class ContextMenu : IServiceType, IDisposable
     private unsafe nint AgentById(AgentId id)
     {
         var uiModule = (UIModule*)_pluginServiceFactory.Create<IGameGui>().GetUIModule();
-        if (uiModule is null) return nint.Zero;
+        if (uiModule is null)
+            return nint.Zero;
         var agents = uiModule->GetAgentModule();
-        if (agents is null) return nint.Zero;
+        if (agents is null)
+            return nint.Zero;
         var agent = agents->GetAgentByInternalId(id);
         return (nint)agent;
     }
@@ -107,7 +115,7 @@ public class ContextMenu : IServiceType, IDisposable
     public void Dispose()
     {
         DisableIntegration();
-        _contextMenu?.Dispose();
+        _contextMenu.Dispose();
         GC.SuppressFinalize(this);
     }
 }

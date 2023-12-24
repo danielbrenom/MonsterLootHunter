@@ -1,4 +1,5 @@
 ﻿using Dalamud.Game.Command;
+using Dalamud.Interface.Windowing;
 using Dalamud.Plugin;
 using Dalamud.Plugin.Services;
 using Dalamud.Utility;
@@ -22,9 +23,9 @@ public class Plugin : IDalamudPlugin
     {
         PluginInterface = pluginInterface;
         CommandManager = commandManager;
-        var configuration = (Configuration)PluginInterface.GetPluginConfig() ?? new Configuration();
+        var configuration = (Configuration?)PluginInterface.GetPluginConfig() ?? new Configuration();
         configuration.Initialize(pluginInterface, clientState.ClientLanguage);
-        _windowService = new WindowService(new(WindowConstants.WindowSystemNamespace));
+        _windowService = new WindowService(new WindowSystem(WindowConstants.WindowSystemNamespace));
         _pluginServiceFactory = new PluginServiceFactory().RegisterService(pluginInterface)
                                                           .RegisterService(_windowService)
                                                           .RegisterService(configuration)
@@ -76,7 +77,7 @@ public class Plugin : IDalamudPlugin
 
     public void Dispose()
     {
-        PluginInterface?.SavePluginConfig(_pluginServiceFactory.Create<Configuration>());
+        PluginInterface.SavePluginConfig(_pluginServiceFactory.Create<Configuration>());
         _pluginServiceFactory.Dispose();
         CommandManager.RemoveHandler(PluginConstants.CommandSlash);
         CommandManager.RemoveHandler(PluginConstants.ShortCommandSlash);
