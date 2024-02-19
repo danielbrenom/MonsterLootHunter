@@ -11,33 +11,31 @@ public class MaterialTableRenderer
 {
     private readonly MapManagerService _mapManagerService;
     private readonly float _scale;
-    private readonly Vector2 _textSize;
     private Func<LootDrops, object>? _sortPropFunc;
     private Func<LootPurchase, object>? _sortVendorPropFunc;
     private ImGuiSortDirection _sortDirection;
     private ImGuiSortDirection _sortVendorDirection;
 
-    public MaterialTableRenderer(MapManagerService mapManagerService, float scale, Vector2 textSize)
+    public MaterialTableRenderer(MapManagerService mapManagerService, float scale)
     {
         _mapManagerService = mapManagerService;
         _scale = scale;
-        _textSize = textSize;
         _sortDirection = ImGuiSortDirection.Ascending;
         _sortVendorDirection = ImGuiSortDirection.Ascending;
     }
 
-    public void RenderMobTable(IList<LootDrops>? mobList)
+    public void RenderMobTable(IList<LootDrops>? mobList, Vector2 textSize)
     {
         if (mobList is null || !mobList.Any())
         {
-            ImGui.BeginChild("MLH_ObtainedFrom_Empty", new Vector2(0f, _textSize.Y * 13), true);
+            ImGui.BeginChild("MLH_ObtainedFrom_Empty", new Vector2(0f, textSize.Y * 13), true);
             ImGui.Text("This probably isn't obtained this way or the Wiki don't have this information");
             ImGui.EndChild();
             return;
         }
 
         if (ImGui.BeginTable("MLH_ObtainedFromTable", 5, ImGuiTableFlags.ScrollY | ImGuiTableFlags.RowBg | ImGuiTableFlags.Borders | ImGuiTableFlags.NoHostExtendX | ImGuiTableFlags.Reorderable | ImGuiTableFlags.Sortable | ImGuiTableFlags.Resizable,
-                             new Vector2(0f, _textSize.Y * 13)))
+                             new Vector2(0f, textSize.Y * 13)))
         {
             ImGui.TableSetupScrollFreeze(0,1);
             ImGui.TableSetupColumn("Name", ImGuiTableColumnFlags.NoSort, 150.0f, (uint)LootSortId.Name);
@@ -72,7 +70,7 @@ public class MaterialTableRenderer
             foreach (var mob in mobList)
             {
                 var index = mobList.IndexOf(mob);
-                ImGui.TableNextRow(ImGuiTableRowFlags.None, _textSize.Y * 1.5f);
+                ImGui.TableNextRow(ImGuiTableRowFlags.None, textSize.Y * 1.5f);
                 ImGui.AlignTextToFramePadding();
                 ImGui.TableNextColumn();
                 ImGui.Text(mob.MobName);
@@ -86,7 +84,7 @@ public class MaterialTableRenderer
                 if (!string.IsNullOrEmpty(mob.MobFlag) && mob.MobFlag != "N/A" && _mapManagerService.CheckLocation(mob.MobLocation, out var location))
                 {
                     ImGui.PushFont(UiBuilder.IconFont);
-                    if (ImGui.Button($"{(char)FontAwesomeIcon.MapMarkerAlt}##listing{index}", new Vector2(25 * _scale, _textSize.Y * _scale * 1.5f)))
+                    if (ImGui.Button($"{(char)FontAwesomeIcon.MapMarkerAlt}##listing{index}", new Vector2(25 * _scale, textSize.Y * _scale * 1.5f)))
                         _mapManagerService.MarkMapFlag(location, mob.MobFlag);
 
                     ImGui.PopFont();
@@ -103,17 +101,17 @@ public class MaterialTableRenderer
         }
     }
 
-    public void RenderLegacyMobTable(IList<LootDrops>? mobList)
+    public void RenderLegacyMobTable(IList<LootDrops>? mobList, Vector2 textSize)
     {
         if (mobList is null || !mobList.Any())
         {
-            ImGui.BeginChild("MLH_ObtainedFrom_Legacy_Empty", new Vector2(0f, _textSize.Y * 13), true);
+            ImGui.BeginChild("MLH_ObtainedFrom_Legacy_Empty", new Vector2(0f, textSize.Y * 13), true);
             ImGui.Text("This probably isn't obtained this way or the Wiki don't have this information");
             ImGui.EndChild();
             return;
         }
 
-        ImGui.BeginChild("MLH_ObtainedFrom_Legacy", new Vector2(0f, _textSize.Y * 13));
+        ImGui.BeginChild("MLH_ObtainedFrom_Legacy", new Vector2(0f, textSize.Y * 13));
         ImGui.Columns(4, "ObtainedFrom_LegacyColumns");
         ImGui.SetColumnWidth(0, 200.0f);
         ImGui.SetColumnWidth(1, 230.0f);
@@ -158,18 +156,18 @@ public class MaterialTableRenderer
         ImGui.EndChild();
     }
 
-    public void RenderVendorTable(IList<LootPurchase>? vendorList)
+    public void RenderVendorTable(IList<LootPurchase>? vendorList, Vector2 textSize)
     {
         if (vendorList is null || !vendorList.Any())
         {
-            ImGui.BeginChild("MLH_PurchasedFrom_Empty", new Vector2(0f, _textSize.Y * 13), true);
+            ImGui.BeginChild("MLH_PurchasedFrom_Empty", new Vector2(0f, textSize.Y * 13), true);
             ImGui.Text("This probably isn't obtained this way or the Wiki don't have this information");
             ImGui.EndChild();
             return;
         }
 
         if (ImGui.BeginTable("MLH_PurchasedFromTable", 4, ImGuiTableFlags.ScrollY | ImGuiTableFlags.RowBg | ImGuiTableFlags.Borders | ImGuiTableFlags.NoHostExtendX | ImGuiTableFlags.Reorderable | ImGuiTableFlags.Sortable | ImGuiTableFlags.Resizable,
-                             new Vector2(0f, _textSize.Y * 13)))
+                             new Vector2(0f, textSize.Y * 13)))
         {
             ImGui.TableSetupScrollFreeze(0,1);
             ImGui.TableSetupColumn("Vendor", ImGuiTableColumnFlags.WidthFixed | ImGuiTableColumnFlags.NoSort, 200f, (uint)LootSortId.Name);
@@ -223,17 +221,17 @@ public class MaterialTableRenderer
         }
     }
 
-    public void RenderLegacyVendorTable(IList<LootPurchase>? vendorList)
+    public void RenderLegacyVendorTable(IList<LootPurchase>? vendorList, Vector2 textSize)
     {
         if (vendorList is null || !vendorList.Any())
         {
-            ImGui.BeginChild("MLH_PurchasedFrom_Legacy_Empty", new Vector2(0f, _textSize.Y * 13), true);
+            ImGui.BeginChild("MLH_PurchasedFrom_Legacy_Empty", new Vector2(0f, textSize.Y * 13), true);
             ImGui.Text("This probably isn't obtained this way or the Wiki don't have this information");
             ImGui.EndChild();
             return;
         }
 
-        ImGui.BeginChild("MLH_PurchasedFromTable_Legacy", new Vector2(0f, _textSize.Y * 13));
+        ImGui.BeginChild("MLH_PurchasedFromTable_Legacy", new Vector2(0f, textSize.Y * 13));
         ImGui.Columns(4, "purchasedFromColumns");
         ImGui.SetColumnWidth(2, 100.0f);
         ImGui.Separator();

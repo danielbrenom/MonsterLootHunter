@@ -23,7 +23,7 @@ public class PluginUi : Window, IDisposable
     private List<KeyValuePair<ItemSearchCategory, List<Item>>> _enumerableCategoriesAndItems;
     private LootData? _lootData;
     private readonly float _scale;
-    private readonly Vector2 _itemTextSize;
+    private Vector2 _itemTextSize;
     private readonly CancellationTokenSource _tokenSource;
     private bool Loading { get; set; }
 
@@ -48,8 +48,7 @@ public class PluginUi : Window, IDisposable
         _selectedItem = new Item();
         _tokenSource = new CancellationTokenSource();
         _scale = ImGui.GetIO().FontGlobalScale;
-        _itemTextSize = ImGui.CalcTextSize(string.Empty);
-        _materialTableRenderer = new MaterialTableRenderer(_pluginServiceFactory.Create<MapManagerService>(), _scale, _itemTextSize);
+        _materialTableRenderer = new MaterialTableRenderer(_pluginServiceFactory.Create<MapManagerService>(), _scale);
         SizeConstraints = new WindowSizeConstraints
         {
             MinimumSize = new Vector2(800, 600) * _scale * _configuration.MinimumWindowScale,
@@ -61,6 +60,7 @@ public class PluginUi : Window, IDisposable
 
     public override void Draw()
     {
+        _itemTextSize = ImGui.CalcTextSize(string.Empty);
         LoadCategoryItemList();
         try
         {
@@ -177,15 +177,21 @@ public class PluginUi : Window, IDisposable
                     ImGui.Text($"{(char)FontAwesomeIcon.Spinner}");
                     ImGui.PopFont();
                 }
+                
+                ImGui.SameLine();
+                const string source = "Data provided by FFXIV Console Games Wiki (https://ffxiv.consolegameswiki.com)";
+                ImGui.SetCursorPosX(ImGui.GetWindowContentRegionMax().X - ImGui.CalcTextSize(source).X );
+                ImGui.SetCursorPosY(ImGui.GetCursorPosY() - ImGui.GetFontSize() / 2.0f + 50 * _scale);
+                ImGui.Text(source);
 
                 #region Obtained From Table
 
                 ImGui.Text("Obtained From");
                 var mobList = _lootData?.LootLocations.OrderBy(m => m.MobName).ToList();
                 if (_configuration.UseLegacyViewer)
-                    _materialTableRenderer.RenderLegacyMobTable(mobList);
+                    _materialTableRenderer.RenderLegacyMobTable(mobList, _itemTextSize);
                 else
-                    _materialTableRenderer.RenderMobTable(mobList);
+                    _materialTableRenderer.RenderMobTable(mobList, _itemTextSize);
 
                 #endregion
 
@@ -196,15 +202,12 @@ public class PluginUi : Window, IDisposable
                 ImGui.Text("Purchased From");
                 var vendorList = _lootData?.LootPurchaseLocations.OrderBy(v => v.Vendor).ToList();
                 if (_configuration.UseLegacyViewer)
-                    _materialTableRenderer.RenderLegacyVendorTable(vendorList);
+                    _materialTableRenderer.RenderLegacyVendorTable(vendorList, _itemTextSize);
                 else
-                    _materialTableRenderer.RenderVendorTable(vendorList);
+                    _materialTableRenderer.RenderVendorTable(vendorList, _itemTextSize);
 
                 #endregion
             }
-
-            ImGui.SetCursorPosY(ImGui.GetWindowContentRegionMax().Y - ImGui.GetTextLineHeightWithSpacing());
-            ImGui.Text("Data provided by FFXIV Console Games Wiki (https://ffxiv.consolegameswiki.com)");
 
             ImGui.EndChild();
         }
