@@ -23,13 +23,13 @@ public partial class MapManagerService : IServiceType
     {
         _gameGui = gameGui;
         _pluginLog = pluginLog;
-        CachedTerritories = dataManager.GetExcelSheet<TerritoryType>()?.ToList() ?? new List<TerritoryType>();
+        CachedTerritories = dataManager.GetExcelSheet<TerritoryType>()?.ToList() ?? [];
     }
 
     public bool CheckLocation(string locationName, out TerritoryType? territoryType)
     {
-        locationName = locationName.Contains('-') ? locationName.Split('-')[0] : locationName;
-        territoryType = CachedTerritories.FirstOrDefault(t => t.PlaceName.Value != null && t.PlaceName.Value.Name.ToString().ToLowerInvariant().Contains(locationName.ToLowerInvariant()));
+        locationName = locationName.Contains('-') ? locationName.Split('-')[0].Trim() : locationName.Trim();
+        territoryType = CachedTerritories.FirstOrDefault(t => t.PlaceName.Value != null && t.PlaceName.Value.Name.ToString().Contains(locationName, StringComparison.InvariantCultureIgnoreCase));
         return territoryType is not null;
     }
 
@@ -48,7 +48,7 @@ public partial class MapManagerService : IServiceType
         }
         catch (Exception e)
         {
-            _pluginLog.Error($"Not able to mark location {location.Name} on map. With error: {e.Message}");
+            _pluginLog.Error("Not able to mark location {0} on map. With error: {1}", location?.Name.ToString() ?? string.Empty, e.Message);
         }
     }
 }

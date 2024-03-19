@@ -7,14 +7,7 @@ namespace MonsterLootHunter.Helpers;
 
 public class WikiClient : IServiceType
 {
-    private readonly HtmlWeb _webClient;
-    private readonly WikiParser _wikiParser;
-
-    public WikiClient(WikiParser wikiParser)
-    {
-        _wikiParser = wikiParser;
-        _webClient = new HtmlWeb();
-    }
+    private readonly HtmlWeb _webClient = new();
 
     public async Task<LootData> GetLootData(string lootName, CancellationToken cancellationToken)
     {
@@ -24,7 +17,7 @@ public class WikiClient : IServiceType
         var pageResponse = await _webClient.LoadFromWebAsync(uri, cancellationToken);
         try
         {
-            return await _wikiParser.ParseResponse(pageResponse, lootName).WaitAsync(cancellationToken);
+            return await WikiParser.ParseResponse(pageResponse, lootName).WaitAsync(cancellationToken);
         }
         catch (Exception)
         {

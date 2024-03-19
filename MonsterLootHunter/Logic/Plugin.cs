@@ -19,7 +19,7 @@ public class Plugin : IDalamudPlugin
     private readonly WindowService _windowService;
 
     public Plugin(DalamudPluginInterface pluginInterface, ICommandManager commandManager, IDataManager dataManager,
-        IGameGui gameGui, IClientState clientState, ITextureProvider textureProvider, IPluginLog pluginLog)
+        IGameGui gameGui, IClientState clientState, ITextureProvider textureProvider, IContextMenu contextMenu, IPluginLog pluginLog)
     {
         PluginInterface = pluginInterface;
         CommandManager = commandManager;
@@ -32,6 +32,7 @@ public class Plugin : IDalamudPlugin
                                                           .RegisterService(dataManager)
                                                           .RegisterService(gameGui)
                                                           .RegisterService(textureProvider)
+                                                          .RegisterService(contextMenu)
                                                           .RegisterService(pluginLog);
         _pluginServiceFactory.RegisterService(_pluginServiceFactory);
         new PluginModule().Register(_pluginServiceFactory);

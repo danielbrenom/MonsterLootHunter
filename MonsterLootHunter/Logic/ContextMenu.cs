@@ -1,108 +1,105 @@
 ﻿using Dalamud;
-using Dalamud.ContextMenu;
+using Dalamud.Game.Gui.ContextMenu;
 using Dalamud.Game.Text.SeStringHandling;
 using Dalamud.Game.Text.SeStringHandling.Payloads;
-using Dalamud.Plugin;
 using Dalamud.Plugin.Services;
+using FFXIVClientStructs.FFXIV.Client.UI;
+using FFXIVClientStructs.FFXIV.Client.UI.Agent;
 using MonsterLootHunter.Services;
 using MonsterLootHunter.Utils;
 using MonsterLootHunter.Windows;
-using FFXIVClientStructs.FFXIV.Client.UI;
-using FFXIVClientStructs.FFXIV.Client.UI.Agent;
 
 namespace MonsterLootHunter.Logic;
 
 public class ContextMenu : IServiceType, IDisposable
 {
-    private readonly PluginServiceFactory _pluginServiceFactory;
-    private readonly DalamudContextMenu _contextMenu;
+    private readonly IContextMenu _contextMenu;
+    private readonly IGameGui _gameGui;
+    private readonly WindowService _windowService;
+    private readonly Configuration _configuration;
+    private readonly ItemManagerService _itemManagerService;
     private static readonly SeString SearchString = new(new TextPayload("Loot search"));
 
-    public ContextMenu(PluginServiceFactory pluginServiceFactory)
+    public ContextMenu(IContextMenu contextMenu, IGameGui gameGui, WindowService windowService, Configuration configuration, ItemManagerService itemManagerService)
     {
-        _pluginServiceFactory = pluginServiceFactory;
-        _contextMenu = new(pluginServiceFactory.Create<DalamudPluginInterface>());
+        _contextMenu = contextMenu;
+        _gameGui = gameGui;
+        _windowService = windowService;
+        _configuration = configuration;
+        _itemManagerService = itemManagerService;
         EnableIntegration();
     }
 
     private void EnableIntegration()
     {
-        _contextMenu.OnOpenInventoryContextMenu += AddInventoryItem;
-        _contextMenu.OnOpenGameObjectContextMenu += AddGameObjectItem;
+        _contextMenu.OnMenuOpened += AddInventoryItem;
     }
 
     private void DisableIntegration()
     {
-        _contextMenu.OnOpenInventoryContextMenu -= AddInventoryItem;
-        _contextMenu.OnOpenGameObjectContextMenu -= AddGameObjectItem;
+        _contextMenu.OnMenuOpened -= AddInventoryItem;
     }
 
-    private void AddInventoryItem(InventoryContextMenuOpenArgs args)
+    private void AddInventoryItem(MenuOpenedArgs args)
     {
-        if (!_pluginServiceFactory.Create<Configuration>().ContextMenuIntegration)
+        if (!_configuration.ContextMenuIntegration)
             return;
-        var menuItem = CheckItem(args.ItemId);
+
+        var menuItem = CreateMenuItem(args);
         if (menuItem != null)
-            args.AddCustomItem(menuItem);
+            args.AddMenuItem(menuItem);
     }
 
-    private void AddGameObjectItem(GameObjectContextMenuOpenArgs args)
+    private MenuItem? CreateMenuItem(MenuArgs args)
     {
-        if (!_pluginServiceFactory.Create<Configuration>().ContextMenuIntegration)
-            return;
-        var item = args.ParentAddonName switch
+        return args.Target switch
+        {
+            MenuTargetDefault => CreateGameObjectItem(args),
+            MenuTargetInventory inventory => CreateMenuItem(inventory.TargetItem?.ItemId),
+            _ => null
+        };
+    }
+
+    private MenuItem? CreateMenuItem(ulong? itemId)
+    {
+        var pluginWindow = _windowService.GetWindow(WindowConstants.MainWindowName);
+        if (pluginWindow is not PluginUi window || itemId is null)
+            return null;
+        itemId = itemId > 500000 ? itemId - 500000 : itemId;
+        if (!_itemManagerService.CheckSelectedItem(itemId.Value))
+            return null;
+        return new MenuItem
+        {
+            Name = SearchString, OnClicked = _ =>
+            {
+                window.IsOpen = true;
+                Task.Run(async () => await window.ChangeSelectedItem(itemId.Value));
+            }
+        };
+    }
+
+    private MenuItem? CreateGameObjectItem(MenuArgs args)
+    {
+        return args.AddonName switch
         {
             null => null,
             "RecipeNote" => CheckGameObjectItem("RecipeNote", Offsets.RecipeNoteContextItemId),
             "RecipeTree" => CheckGameObjectItem(AgentById(AgentId.RecipeItemContext), Offsets.AgentItemContextItemId),
             "RecipeMaterialList" => CheckGameObjectItem(AgentById(AgentId.RecipeItemContext), Offsets.AgentItemContextItemId),
-            "ItemSearch" => CheckGameObjectItem(args.Agent, Offsets.ItemSearchContextItemId),
+            "ItemSearch" => CheckGameObjectItem(args.AgentPtr, Offsets.ItemSearchContextItemId),
             _ => null
         };
-
-        if (item != null)
-            args.AddCustomItem(item);
     }
 
-    private InventoryContextMenuItem? CheckItem(uint itemId)
-    {
-        var pluginWindow = _pluginServiceFactory.Create<WindowService>().GetWindow(WindowConstants.MainWindowName);
-        if (pluginWindow is not PluginUi window)
-            return null;
-        itemId = itemId > 500000 ? itemId - 500000 : itemId;
-        if (!_pluginServiceFactory.Create<ItemManagerService>().CheckSelectedItem(itemId))
-            return null;
-        return new InventoryContextMenuItem(SearchString, _ =>
-        {
-            window.IsOpen = true;
-            Task.Run(async () => await window.ChangeSelectedItem(itemId));
-        }, true);
-    }
+    private MenuItem? CheckGameObjectItem(string name, int offset)
+        => CheckGameObjectItem(_gameGui.FindAgentInterface(name), offset);
 
-    private GameObjectContextMenuItem? CheckGameObjectItem(string name, int offset)
-        => CheckGameObjectItem(_pluginServiceFactory.Create<IGameGui>().FindAgentInterface(name), offset);
-
-    private unsafe GameObjectContextMenuItem? CheckGameObjectItem(nint agent, int offset)
-        => agent != nint.Zero ? CheckGameObjectItem(*(uint*)(agent + offset)) : null;
-
-    private GameObjectContextMenuItem? CheckGameObjectItem(uint itemId)
-    {
-        var pluginWindow = _pluginServiceFactory.Create<WindowService>().GetWindow(WindowConstants.MainWindowName);
-        if (pluginWindow is not PluginUi window)
-            return null;
-        itemId = itemId > 500000 ? itemId - 500000 : itemId;
-        if (!_pluginServiceFactory.Create<ItemManagerService>().CheckSelectedItem(itemId))
-            return null;
-        return new GameObjectContextMenuItem(SearchString, _ =>
-        {
-            window.IsOpen = true;
-            Task.Run(async () => await window.ChangeSelectedItem(itemId));
-        }, true);
-    }
+    private unsafe MenuItem? CheckGameObjectItem(nint agent, int offset)
+        => agent != nint.Zero ? CreateMenuItem(*(uint*)(agent + offset)) : null;
 
     private unsafe nint AgentById(AgentId id)
     {
-        var uiModule = (UIModule*)_pluginServiceFactory.Create<IGameGui>().GetUIModule();
+        var uiModule = (UIModule*)_gameGui.GetUIModule();
         if (uiModule is null)
             return nint.Zero;
         var agents = uiModule->GetAgentModule();
@@ -115,7 +112,6 @@ public class ContextMenu : IServiceType, IDisposable
     public void Dispose()
     {
         DisableIntegration();
-        _contextMenu.Dispose();
         GC.SuppressFinalize(this);
     }
 }

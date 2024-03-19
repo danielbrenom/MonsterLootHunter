@@ -5,8 +5,8 @@
   "Description": "Check where you can obtain a material from monsters, duties, crafting, gathering or where they can be bought from NPCs.",
   "InternalName": "monsterLootHunter",
   "ApplicableVersion": "any",
-  "Changelog": "- Refactored font size calculation",
-  "AssemblyVersion": "1.0.20.5",
+  "Changelog": "- NET8 Update\n-IContextMenu refactor\n-General refactorings",
+  "AssemblyVersion": "1.1.20.5",
   "RepoUrl": "https://github.com/danielbrenom/MonsterLootHunter",
   "Tags": [
     "material",

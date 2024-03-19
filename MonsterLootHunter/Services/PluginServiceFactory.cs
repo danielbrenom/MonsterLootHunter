@@ -1,17 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-
-namespace MonsterLootHunter.Services;
+﻿namespace MonsterLootHunter.Services;
 
 public class PluginServiceFactory
 {
-    private readonly Dictionary<Type, object> _services;
-
-    public PluginServiceFactory()
-    {
-        _services = new Dictionary<Type, object>();
-    }
+    private readonly Dictionary<Type, object> _services = new();
 
     public PluginServiceFactory RegisterService<T>() where T : class
     {
@@ -28,8 +19,8 @@ public class PluginServiceFactory
     public T Create<T>() where T : class
     {
         if (_services.TryGetValue(typeof(T), out var service))
-            return service as T;
-        return Create(typeof(T)) as T;
+            return (T)service;
+        return (T)Create(typeof(T));
     }
 
     private object Create(Type type)

@@ -18,7 +18,7 @@ public class PluginUi : Window, IDisposable
     private readonly PluginServiceFactory _pluginServiceFactory;
     private readonly Configuration _configuration;
     private readonly MaterialTableRenderer _materialTableRenderer;
-    private Item _selectedItem;
+    private Item? _selectedItem;
     private IDalamudTextureWrap? _selectedItemIcon;
     private List<KeyValuePair<ItemSearchCategory, List<Item>>> _enumerableCategoriesAndItems;
     private LootData? _lootData;
@@ -219,7 +219,7 @@ public class PluginUi : Window, IDisposable
 
     private void LoadCategoryItemList()
     {
-        var shouldPerformSearch = !_enumerableCategoriesAndItems.Any() || _searchString != _lastSearchString;
+        var shouldPerformSearch = _enumerableCategoriesAndItems.Count == 0 || _searchString != _lastSearchString;
         //Prevent loading the list on every draw if it's not necessary
         if (!shouldPerformSearch)
             return;
@@ -227,12 +227,14 @@ public class PluginUi : Window, IDisposable
             _pluginServiceFactory.Create<ItemManagerService>().GetEnumerableItems(_searchString, _searchString != _lastSearchString);
     }
 
-    protected internal async Task ChangeSelectedItem(uint itemId)
+    protected internal async Task ChangeSelectedItem(ulong itemId)
     {
-        _selectedItem = _pluginServiceFactory.Create<ItemManagerService>().RetrieveItem(itemId);
-        _selectedItemIcon = null;
         try
         {
+            _selectedItem = _pluginServiceFactory.Create<ItemManagerService>().RetrieveItem(itemId);
+            if (_selectedItem is null)
+                return;
+            _selectedItemIcon = null;
             _selectedItemIcon = _pluginServiceFactory.Create<ITextureProvider>().GetIcon(_selectedItem.Icon);
             _lootData = default;
             var token = _tokenSource.Token;
@@ -245,7 +247,7 @@ public class PluginUi : Window, IDisposable
         }
         catch (OperationCanceledException e)
         {
-            _pluginServiceFactory.Create<IPluginLog>().Error(e, "Request for loot $1 info failed", _selectedItem.Name);
+            _pluginServiceFactory.Create<IPluginLog>().Error(e, "Request for loot $1 info failed", _selectedItem?.Name ?? string.Empty);
         }
         finally
         {

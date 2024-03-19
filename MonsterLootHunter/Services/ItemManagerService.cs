@@ -1,7 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using Dalamud;
+﻿using Dalamud;
 using Dalamud.Plugin.Services;
 using Lumina.Excel.GeneratedSheets;
 using MonsterLootHunter.Utils;
@@ -11,8 +8,8 @@ namespace MonsterLootHunter.Services;
 public class ItemManagerService : IServiceType
 {
     private readonly IDataManager _dataManager;
-    private IPluginLog _pluginLog;
-    private readonly IEnumerable<Item> _items;
+    private readonly IPluginLog _pluginLog;
+    private readonly IEnumerable<Item>? _items;
     private Dictionary<ItemSearchCategory, List<Item>> CachedList { get; }
 
     public ItemManagerService(IDataManager dataManager, IPluginLog pluginLog)
@@ -24,16 +21,13 @@ public class ItemManagerService : IServiceType
     }
 
 
-    public bool CheckSelectedItem(uint itemId)
+    public bool CheckSelectedItem(ulong itemId)
     {
         var foundItem = RetrieveItem(itemId);
         return foundItem is not null && CachedList.Any(pair => pair.Value.Any(item => item.RowId == foundItem.RowId));
     }
 
-    public Item RetrieveItem(uint itemId)
-    {
-        return _items.SingleOrDefault(i => i.RowId == itemId);
-    }
+    public Item? RetrieveItem(ulong? itemId) => _items?.SingleOrDefault(i => i.RowId == itemId);
 
     public (List<KeyValuePair<ItemSearchCategory, List<Item>>>, string) GetEnumerableItems(string nameSearched, bool shouldPerformSearch)
     {
@@ -50,20 +44,26 @@ public class ItemManagerService : IServiceType
     {
         try
         {
+            if (_items is null)
+                throw new ArgumentNullException(nameof(_items));
+
             var itemSearchCategories = _dataManager.GetExcelSheet<ItemSearchCategory>();
             var sortedCategories = itemSearchCategories?.Where(c => c.Category > 0 && LootIdentifierConstants.CategoryIds.Contains(c.RowId))
                                                         .OrderBy(c => c.Category).ThenBy(c => c.Order);
 
-            return sortedCategories?.ToDictionary(searchCategory => searchCategory,
-                                                  c => _items.Where(i => i.ItemSearchCategory.Row == c.RowId)
-                                                             .Where(i => !LootIdentifierConstants.ExclusionRegex.IsMatch(i.Name))
-                                                             .OrderBy(i => i.Name.ToString())
-                                                             .ToList());
+            if (sortedCategories is null)
+                throw new ArgumentNullException(nameof(sortedCategories));
+
+            return sortedCategories.ToDictionary(searchCategory => searchCategory,
+                                                 c => _items.Where(i => i.ItemSearchCategory.Row == c.RowId)
+                                                            .Where(i => !LootIdentifierConstants.ExclusionRegex.IsMatch(i.Name))
+                                                            .OrderBy(i => i.Name.ToString())
+                                                            .ToList());
         }
         catch (Exception ex)
         {
-            _pluginLog.Error(ex, "Error loading category list.");
-            return default;
+            _pluginLog.Error(ex, "Error loading loot category list.");
+            return new Dictionary<ItemSearchCategory, List<Item>>(0);
         }
     }
 }

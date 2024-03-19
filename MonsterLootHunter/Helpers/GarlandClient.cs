@@ -21,7 +21,7 @@ public class GarlandClient : IDisposable
         using var response = await _client.GetAsync(searchPath, cancellation);
         var content = await response.Content.ReadAsStringAsync(cancellation);
         var data = JsonConvert.DeserializeObject<GarlandResponse>(content);
-        return data?.Item.Name ?? string.Empty;
+        return data?.Item?.Name ?? string.Empty;
     }
 
     public void Dispose()

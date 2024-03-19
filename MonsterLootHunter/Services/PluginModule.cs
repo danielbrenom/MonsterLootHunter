@@ -9,7 +9,6 @@ public class PluginModule : IModule
     {
         container.RegisterService<ItemManagerService>()
                  .RegisterService<MapManagerService>()
-                 .RegisterService<WikiParser>()
                  .RegisterService<WikiClient>()
                  .RegisterService<ContextMenu>()
                  .RegisterService<GarlandClient>();
