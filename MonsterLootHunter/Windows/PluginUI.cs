@@ -1,6 +1,6 @@
 ﻿using System.Numerics;
 using Dalamud.Interface;
-using Dalamud.Interface.Internal;
+using Dalamud.Interface.Textures.TextureWraps;
 using Dalamud.Interface.Windowing;
 using Dalamud.Plugin.Services;
 using ImGuiNET;
@@ -15,16 +15,21 @@ namespace MonsterLootHunter.Windows;
 
 public class PluginUi : Window, IDisposable
 {
-    private readonly PluginServiceFactory _pluginServiceFactory;
-    private readonly Configuration _configuration;
+    private readonly IPluginLog _pluginLog;
+    private readonly WindowService _windowService;
+    private readonly ImageService _imageService;
     private readonly MaterialTableRenderer _materialTableRenderer;
-    private Item? _selectedItem;
+    private readonly Configuration _configuration;
+    private readonly ItemManagerService _itemManagerService;
+    private readonly WikiClient _wikiClient;
+    private readonly GarlandClient _garlandClient;
     private IDalamudTextureWrap? _selectedItemIcon;
-    private List<KeyValuePair<ItemSearchCategory, List<Item>>> _enumerableCategoriesAndItems;
+    private Item? _selectedItem = new();
+    private List<KeyValuePair<ItemSearchCategory, List<Item>>> _enumerableCategoriesAndItems = [];
     private LootData? _lootData;
     private readonly float _scale;
     private Vector2 _itemTextSize;
-    private readonly CancellationTokenSource _tokenSource;
+    private readonly CancellationTokenSource _tokenSource = new();
     private bool Loading { get; set; }
 
     #region Props
@@ -41,27 +46,33 @@ public class PluginUi : Window, IDisposable
 
     #endregion
 
-    public PluginUi(PluginServiceFactory serviceFactory) : base(WindowConstants.MainWindowName, ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoScrollWithMouse)
+    public PluginUi(WindowService windowService, Configuration configuration, ImageService imageService, MaterialTableRenderer tableRenderer, ItemManagerService itemManagerService,
+                    WikiClient wikiClient, GarlandClient garlandClient, IPluginLog pluginLog)
+        : base(WindowConstants.MainWindowName, ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoScrollWithMouse)
     {
-        _pluginServiceFactory = serviceFactory;
-        _configuration = _pluginServiceFactory.Create<Configuration>();
-        _selectedItem = new Item();
-        _tokenSource = new CancellationTokenSource();
+        _windowService = windowService;
+        _configuration = configuration;
+        _imageService = imageService;
+        _pluginLog = pluginLog;
+        _wikiClient = wikiClient;
+        _garlandClient = garlandClient;
+        _itemManagerService = itemManagerService;
+        _materialTableRenderer = tableRenderer;
         _scale = ImGui.GetIO().FontGlobalScale;
-        _materialTableRenderer = new MaterialTableRenderer(_pluginServiceFactory.Create<MapManagerService>(), _scale);
+        _materialTableRenderer.SetScale(_scale);
         SizeConstraints = new WindowSizeConstraints
         {
             MinimumSize = new Vector2(800, 600) * _scale * _configuration.MinimumWindowScale,
             MaximumSize = new Vector2(800, 600) * _scale * _configuration.MaximumWindowScale
         };
         SizeCondition = ImGuiCond.FirstUseEver;
-        _enumerableCategoriesAndItems = new List<KeyValuePair<ItemSearchCategory, List<Item>>>();
     }
 
     public override void Draw()
     {
         _itemTextSize = ImGui.CalcTextSize(string.Empty);
         LoadCategoryItemList();
+
         try
         {
             ImGui.BeginChild("lootListColumn", new Vector2(250, 0) * _scale, true);
@@ -72,9 +83,12 @@ public class PluginUi : Window, IDisposable
             #region Loot Categories
 
             ImGui.BeginChild("itemTree", new Vector2(0, -1.0f * ImGui.GetFrameHeightWithSpacing()), false, ImGuiWindowFlags.HorizontalScrollbar | ImGuiWindowFlags.AlwaysHorizontalScrollbar);
+
             foreach (var (category, items) in _enumerableCategoriesAndItems)
             {
-                if (!ImGui.TreeNode(category.Name + "##cat" + category.RowId)) continue;
+                if (!ImGui.TreeNode(category.Name + "##cat" + category.RowId))
+                    continue;
+
                 ImGui.Unindent(ImGui.GetTreeNodeToLabelSpacing());
 
                 for (var i = 0; i < items.Count; i++)
@@ -86,6 +100,7 @@ public class PluginUi : Window, IDisposable
                         var sy = ImGui.GetScrollY() - _itemTextSize.Y;
                         var spacing = _itemTextSize.Y + ImGui.GetStyle().ItemSpacing.Y;
                         var c = items.Count;
+
                         while (i < c && y < sy)
                         {
                             y += spacing;
@@ -116,7 +131,9 @@ public class PluginUi : Window, IDisposable
 
                     ImGui.TreeNodeEx(item.Name + "##item" + item.RowId, nodeFlags);
 
-                    if (!ImGui.IsItemClicked()) continue;
+                    if (!ImGui.IsItemClicked())
+                        continue;
+
                     Loading = true;
                     Task.Run(async () => await ChangeSelectedItem(item.RowId));
                 }
@@ -132,10 +149,13 @@ public class PluginUi : Window, IDisposable
             ImGui.Text("Settings: ");
             ImGui.SameLine();
             ImGui.PushFont(UiBuilder.IconFont);
+
             if (ImGui.Button($"{(char)FontAwesomeIcon.Cog}"))
             {
-                var pluginWindow = _pluginServiceFactory.Create<WindowService>().GetWindow(WindowConstants.ConfigWindowName);
-                if (pluginWindow is not ConfigWindow window) return;
+                var pluginWindow = _windowService.GetWindow(WindowConstants.ConfigWindowName);
+                if (pluginWindow is not ConfigWindow window)
+                    return;
+
                 window.IsOpen = true;
             }
 
@@ -144,10 +164,13 @@ public class PluginUi : Window, IDisposable
             ImGui.EndChild();
             ImGui.SameLine();
             ImGui.BeginChild("panelColumn", new Vector2(0, 0), false, ImGuiWindowFlags.NoScrollbar);
+
             if (_selectedItem?.RowId > 0)
             {
                 try
                 {
+                    _selectedItemIcon = _imageService.GetIconTexture(_selectedItem.Icon);
+
                     if (_selectedItemIcon != null)
                     {
                         ImGui.Image(_selectedItemIcon.ImGuiHandle, new Vector2(40, 40));
@@ -165,6 +188,7 @@ public class PluginUi : Window, IDisposable
                 ImGui.SameLine();
                 ImGui.SetCursorPosY(ImGui.GetCursorPosY() - ImGui.GetFontSize() / 2.0f + 19 * _scale);
                 ImGui.Text(_selectedItem.Name ?? string.Empty);
+
                 if (Loading)
                 {
                     ImGui.SameLine();
@@ -177,10 +201,10 @@ public class PluginUi : Window, IDisposable
                     ImGui.Text($"{(char)FontAwesomeIcon.Spinner}");
                     ImGui.PopFont();
                 }
-                
+
                 ImGui.SameLine();
                 const string source = "Data provided by FFXIV Console Games Wiki (https://ffxiv.consolegameswiki.com)";
-                ImGui.SetCursorPosX(ImGui.GetWindowContentRegionMax().X - ImGui.CalcTextSize(source).X );
+                ImGui.SetCursorPosX(ImGui.GetWindowContentRegionMax().X - ImGui.CalcTextSize(source).X);
                 ImGui.SetCursorPosY(ImGui.GetCursorPosY() - ImGui.GetFontSize() / 2.0f + 50 * _scale);
                 ImGui.Text(source);
 
@@ -213,7 +237,7 @@ public class PluginUi : Window, IDisposable
         }
         catch (Exception e)
         {
-            _pluginServiceFactory.Create<IPluginLog>().Error(e.Message);
+            _pluginLog.Error(e.Message);
         }
     }
 
@@ -223,31 +247,30 @@ public class PluginUi : Window, IDisposable
         //Prevent loading the list on every draw if it's not necessary
         if (!shouldPerformSearch)
             return;
+
         (_enumerableCategoriesAndItems, _lastSearchString) =
-            _pluginServiceFactory.Create<ItemManagerService>().GetEnumerableItems(_searchString, _searchString != _lastSearchString);
+            _itemManagerService.GetEnumerableItems(_searchString, _searchString != _lastSearchString);
     }
 
     protected internal async Task ChangeSelectedItem(ulong itemId)
     {
         try
         {
-            _selectedItem = _pluginServiceFactory.Create<ItemManagerService>().RetrieveItem(itemId);
+            _selectedItem = _itemManagerService.RetrieveItem(itemId);
             if (_selectedItem is null)
                 return;
-            _selectedItemIcon = null;
-            _selectedItemIcon = _pluginServiceFactory.Create<ITextureProvider>().GetIcon(_selectedItem.Icon);
+
             _lootData = default;
             var token = _tokenSource.Token;
-            var itemName = _configuration.UsingAnotherLanguage() ? await _pluginServiceFactory.Create<GarlandClient>().GetItemName(_selectedItem.RowId, token) : _selectedItem.Name.ToString();
+            var itemName = _configuration.UsingAnotherLanguage() ? await _garlandClient.GetItemName(_selectedItem.RowId, token) : _selectedItem.Name.ToString();
 
-            _lootData = await _pluginServiceFactory.Create<WikiClient>()
-                                                   .GetLootData(itemName, token)
-                                                   .ConfigureAwait(false);
+            _lootData = await _wikiClient.GetLootData(itemName, token)
+                                         .ConfigureAwait(false);
             token.ThrowIfCancellationRequested();
         }
         catch (OperationCanceledException e)
         {
-            _pluginServiceFactory.Create<IPluginLog>().Error(e, "Request for loot $1 info failed", _selectedItem?.Name ?? string.Empty);
+            _pluginLog.Error(e, "Request for loot $1 info failed", _selectedItem?.Name ?? string.Empty);
         }
         finally
         {

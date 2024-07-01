@@ -13,34 +13,34 @@ public class Plugin : IDalamudPlugin
 {
     public string Name => PluginConstants.CommandName;
 
-    private DalamudPluginInterface PluginInterface { get; init; }
+    private IDalamudPluginInterface PluginInterface { get; init; }
     private ICommandManager CommandManager { get; init; }
-    private readonly PluginServiceFactory _pluginServiceFactory;
+    private readonly PluginDependencyContainer _pluginDependencyContainer;
     private readonly WindowService _windowService;
 
-    public Plugin(DalamudPluginInterface pluginInterface, ICommandManager commandManager, IDataManager dataManager,
-        IGameGui gameGui, IClientState clientState, ITextureProvider textureProvider, IContextMenu contextMenu, IPluginLog pluginLog)
+    public Plugin(IDalamudPluginInterface pluginInterface, ICommandManager commandManager, IDataManager dataManager,
+                  IGameGui gameGui, IClientState clientState, ITextureProvider textureProvider, IContextMenu contextMenu, IPluginLog pluginLog)
     {
         PluginInterface = pluginInterface;
         CommandManager = commandManager;
         var configuration = (Configuration?)PluginInterface.GetPluginConfig() ?? new Configuration();
         configuration.Initialize(pluginInterface, clientState.ClientLanguage);
         _windowService = new WindowService(new WindowSystem(WindowConstants.WindowSystemNamespace));
-        _pluginServiceFactory = new PluginServiceFactory().RegisterService(pluginInterface)
-                                                          .RegisterService(_windowService)
-                                                          .RegisterService(configuration)
-                                                          .RegisterService(dataManager)
-                                                          .RegisterService(gameGui)
-                                                          .RegisterService(textureProvider)
-                                                          .RegisterService(contextMenu)
-                                                          .RegisterService(pluginLog);
-        _pluginServiceFactory.RegisterService(_pluginServiceFactory);
-        new PluginModule().Register(_pluginServiceFactory);
+        _pluginDependencyContainer = new PluginDependencyContainer().Register(pluginInterface)
+                                                                    .Register(_windowService)
+                                                                    .Register(configuration)
+                                                                    .Register(dataManager)
+                                                                    .Register(gameGui)
+                                                                    .Register(textureProvider)
+                                                                    .Register(contextMenu)
+                                                                    .Register(pluginLog)
+                                                                    .Register<ConfigWindow>()
+                                                                    .Register<PluginUi>();
+        PluginModule.Register(_pluginDependencyContainer);
+        _pluginDependencyContainer.Resolve();
 
-
-        _windowService.RegisterWindow(new ConfigWindow(configuration), WindowConstants.ConfigWindowName);
-        _windowService.RegisterWindow(new PluginUi(_pluginServiceFactory), WindowConstants.MainWindowName);
-
+        _windowService.RegisterWindow(_pluginDependencyContainer.Retrieve<ConfigWindow>(), WindowConstants.ConfigWindowName);
+        _windowService.RegisterWindow(_pluginDependencyContainer.Retrieve<PluginUi>(), WindowConstants.MainWindowName);
         CommandManager.AddHandler(PluginConstants.CommandSlash, new CommandInfo(OnCommand)
         {
             HelpMessage = PluginConstants.CommandHelperText
@@ -55,11 +55,12 @@ public class Plugin : IDalamudPlugin
         PluginInterface.UiBuilder.OpenConfigUi += DrawConfigUi;
     }
 
-
     private void OnCommand(string command, string args)
     {
         var pluginWindow = _windowService.GetWindow(WindowConstants.MainWindowName);
-        if (pluginWindow is not PluginUi window) return;
+        if (pluginWindow is not PluginUi window)
+            return;
+
         pluginWindow.IsOpen = true;
         window.SearchString = !args.IsNullOrEmpty() ? args : string.Empty;
     }
@@ -72,14 +73,16 @@ public class Plugin : IDalamudPlugin
     private void DrawConfigUi()
     {
         var pluginWindow = _windowService.GetWindow(WindowConstants.ConfigWindowName);
-        if (pluginWindow is not ConfigWindow window) return;
+        if (pluginWindow is not ConfigWindow window)
+            return;
+
         window.IsOpen = true;
     }
 
     public void Dispose()
     {
-        PluginInterface.SavePluginConfig(_pluginServiceFactory.Create<Configuration>());
-        _pluginServiceFactory.Dispose();
+        PluginInterface.SavePluginConfig(_pluginDependencyContainer.Retrieve<Configuration>());
+        _pluginDependencyContainer.Dispose();
         CommandManager.RemoveHandler(PluginConstants.CommandSlash);
         CommandManager.RemoveHandler(PluginConstants.ShortCommandSlash);
         _windowService.Unregister();
