@@ -1,18 +1,14 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Globalization;
-using System.Linq;
+﻿using System.Globalization;
 using System.Text.RegularExpressions;
-using Dalamud;
 using Dalamud.Game.Text.SeStringHandling.Payloads;
 using Dalamud.Plugin.Services;
 using Lumina.Excel.GeneratedSheets;
 
 namespace MonsterLootHunter.Services;
 
-public partial class MapManagerService : IServiceType
+public partial class MapManagerService
 {
-    [GeneratedRegex("(\\d+\\.?\\d*)")]
+    [GeneratedRegex(@"(\d+\.?\d*)", RegexOptions.Compiled | RegexOptions.IgnoreCase)]
     private static partial Regex CoordinatesRegex();
 
     private readonly IGameGui _gameGui;
@@ -39,6 +35,7 @@ public partial class MapManagerService : IServiceType
         {
             if (location is null)
                 return;
+
             var flagParsed = CoordinatesRegex().Matches(position);
             var coords = new float[2];
             coords[0] = float.Parse(flagParsed[0].Value, CultureInfo.InvariantCulture);

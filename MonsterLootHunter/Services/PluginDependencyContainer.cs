@@ -1,35 +1,48 @@
 ﻿namespace MonsterLootHunter.Services;
 
-public class PluginServiceFactory
+public class PluginDependencyContainer
 {
+    private readonly List<Type> _registeredTypes = [];
     private readonly Dictionary<Type, object> _services = new();
 
-    public PluginServiceFactory RegisterService<T>() where T : class
+    public PluginDependencyContainer Register<T>() where T : class
     {
-        _services.Add(typeof(T), Create<T>());
+        if (!_registeredTypes.Contains(typeof(T)))
+            _registeredTypes.Add(typeof(T));
         return this;
     }
 
-    public PluginServiceFactory RegisterService<T>(T instance) where T : class
+    public PluginDependencyContainer Register<T>(T instance) where T : class
     {
-        _services.Add(typeof(T), instance);
+        _registeredTypes.Add(typeof(T));
+        _services.TryAdd(typeof(T), instance);
         return this;
     }
 
-    public T Create<T>() where T : class
+    public void Resolve()
+    {
+        foreach (var registeredType in _registeredTypes)
+        {
+            _services.TryAdd(registeredType, CreateDependency(registeredType));
+        }
+    }
+
+    public T Retrieve<T>() where T : class
     {
         if (_services.TryGetValue(typeof(T), out var service))
             return (T)service;
-        return (T)Create(typeof(T));
+
+        return (T)CreateDependency(typeof(T));
     }
 
-    private object Create(Type type)
+    private object CreateDependency(Type type)
     {
         if (_services.TryGetValue(type, out var service))
             return service;
+
         var defaultConstructor = type.GetConstructors()[0];
         var defaultParams = defaultConstructor.GetParameters();
-        var parameters = defaultParams.Select(param => Create(param.ParameterType)).ToArray();
+        var parameters = defaultParams.Select(param => CreateDependency(param.ParameterType)).ToArray();
         return defaultConstructor.Invoke(parameters);
     }
 

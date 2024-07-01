@@ -1,11 +1,10 @@
-﻿using Dalamud;
-using Dalamud.Plugin.Services;
+﻿using Dalamud.Plugin.Services;
 using Lumina.Excel.GeneratedSheets;
 using MonsterLootHunter.Utils;
 
 namespace MonsterLootHunter.Services;
 
-public class ItemManagerService : IServiceType
+public class ItemManagerService
 {
     private readonly IDataManager _dataManager;
     private readonly IPluginLog _pluginLog;
@@ -20,14 +19,16 @@ public class ItemManagerService : IServiceType
         CachedList = SortCategoriesAndItems();
     }
 
-
     public bool CheckSelectedItem(ulong itemId)
     {
         var foundItem = RetrieveItem(itemId);
         return foundItem is not null && CachedList.Any(pair => pair.Value.Any(item => item.RowId == foundItem.RowId));
     }
 
-    public Item? RetrieveItem(ulong? itemId) => _items?.SingleOrDefault(i => i.RowId == itemId);
+    public Item? RetrieveItem(ulong? itemId)
+    {
+        return _items?.SingleOrDefault(i => i.RowId == itemId);
+    }
 
     public (List<KeyValuePair<ItemSearchCategory, List<Item>>>, string) GetEnumerableItems(string nameSearched, bool shouldPerformSearch)
     {

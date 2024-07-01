@@ -1,5 +1,5 @@
-﻿using Dalamud;
-using Dalamud.Configuration;
+﻿using Dalamud.Configuration;
+using Dalamud.Game;
 using Dalamud.Plugin;
 
 namespace MonsterLootHunter.Logic;
@@ -14,9 +14,10 @@ public class Configuration : IPluginConfiguration
     public float MinimumWindowScale { get; set; } = 1f;
     public float MaximumWindowScale { get; set; } = 1.5f;
 
-    [NonSerialized] private DalamudPluginInterface? _pluginInterface;
+    [NonSerialized]
+    private IDalamudPluginInterface? _pluginInterface;
 
-    public void Initialize(DalamudPluginInterface pluginInterface, ClientLanguage language)
+    public void Initialize(IDalamudPluginInterface pluginInterface, ClientLanguage language)
     {
         _pluginInterface = pluginInterface;
         ClientUsingAnotherLanguage = language != ClientLanguage.English;

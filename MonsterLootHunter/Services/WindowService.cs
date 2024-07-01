@@ -16,6 +16,7 @@ public class WindowService(WindowSystem windowSystem)
     {
         if (RegisteredWindows.TryGetValue(windowName, out var window))
             return window;
+
         throw new KeyNotFoundException("Window not registered");
     }
 

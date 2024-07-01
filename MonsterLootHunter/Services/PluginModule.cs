@@ -3,14 +3,16 @@ using MonsterLootHunter.Logic;
 
 namespace MonsterLootHunter.Services;
 
-public class PluginModule : IModule
+public static class PluginModule
 {
-    public void Register(PluginServiceFactory container)
+    public static void Register(PluginDependencyContainer container)
     {
-        container.RegisterService<ItemManagerService>()
-                 .RegisterService<MapManagerService>()
-                 .RegisterService<WikiClient>()
-                 .RegisterService<ContextMenu>()
-                 .RegisterService<GarlandClient>();
+        container.Register<ItemManagerService>()
+                 .Register<MapManagerService>()
+                 .Register<ImageService>()
+                 .Register<MaterialTableRenderer>()
+                 .Register<WikiClient>()
+                 .Register<ContextMenu>()
+                 .Register<GarlandClient>();
     }
 }

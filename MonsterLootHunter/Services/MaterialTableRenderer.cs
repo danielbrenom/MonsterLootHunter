@@ -3,25 +3,28 @@ using System.Numerics;
 using Dalamud.Interface;
 using ImGuiNET;
 using MonsterLootHunter.Data;
-using MonsterLootHunter.Services;
 
-namespace MonsterLootHunter.Windows;
+namespace MonsterLootHunter.Services;
 
 public class MaterialTableRenderer
 {
     private readonly MapManagerService _mapManagerService;
-    private readonly float _scale;
+    private float _scale;
     private Func<LootDrops, object>? _sortPropFunc;
     private Func<LootPurchase, object>? _sortVendorPropFunc;
     private ImGuiSortDirection _sortDirection;
     private ImGuiSortDirection _sortVendorDirection;
 
-    public MaterialTableRenderer(MapManagerService mapManagerService, float scale)
+    public MaterialTableRenderer(MapManagerService mapManagerService)
     {
         _mapManagerService = mapManagerService;
-        _scale = scale;
         _sortDirection = ImGuiSortDirection.Ascending;
         _sortVendorDirection = ImGuiSortDirection.Ascending;
+    }
+
+    public void SetScale(float scale)
+    {
+        _scale = scale;
     }
 
     public void RenderMobTable(IList<LootDrops>? mobList, Vector2 textSize)
@@ -34,10 +37,12 @@ public class MaterialTableRenderer
             return;
         }
 
-        if (ImGui.BeginTable("MLH_ObtainedFromTable", 5, ImGuiTableFlags.ScrollY | ImGuiTableFlags.RowBg | ImGuiTableFlags.Borders | ImGuiTableFlags.NoHostExtendX | ImGuiTableFlags.Reorderable | ImGuiTableFlags.Sortable | ImGuiTableFlags.Resizable,
+        if (ImGui.BeginTable("MLH_ObtainedFromTable", 5,
+                             ImGuiTableFlags.ScrollY | ImGuiTableFlags.RowBg | ImGuiTableFlags.Borders | ImGuiTableFlags.NoHostExtendX | ImGuiTableFlags.Reorderable | ImGuiTableFlags.Sortable
+                             | ImGuiTableFlags.Resizable,
                              new Vector2(0f, textSize.Y * 13)))
         {
-            ImGui.TableSetupScrollFreeze(0,1);
+            ImGui.TableSetupScrollFreeze(0, 1);
             ImGui.TableSetupColumn("Name", ImGuiTableColumnFlags.NoSort, 150.0f, (uint)LootSortId.Name);
             ImGui.TableSetupColumn("Level", ImGuiTableColumnFlags.NoSort, 50.0f, (uint)LootSortId.Level);
             ImGui.TableSetupColumn("Location", ImGuiTableColumnFlags.DefaultSort, 150.0f, (uint)LootSortId.Location);
@@ -45,6 +50,7 @@ public class MaterialTableRenderer
             ImGui.TableSetupColumn("Actions", ImGuiTableColumnFlags.NoSort, 40.0f, (uint)LootSortId.Action);
             ImGui.TableHeadersRow();
             var tableSortSpecs = ImGui.TableGetSortSpecs();
+
             if (tableSortSpecs.SpecsDirty)
             {
                 //TODO: Check how to generate the whole expression not only the prop selector
@@ -81,6 +87,7 @@ public class MaterialTableRenderer
                 ImGui.TableNextColumn();
                 ImGui.Text(mob.MobFlag);
                 ImGui.TableNextColumn();
+
                 if (!string.IsNullOrEmpty(mob.MobFlag) && mob.MobFlag != "N/A" && _mapManagerService.CheckLocation(mob.MobLocation, out var location))
                 {
                     ImGui.PushFont(UiBuilder.IconFont);
@@ -141,6 +148,7 @@ public class MaterialTableRenderer
             ImGui.NextColumn();
             ImGui.Text(mob.MobFlag);
             ImGui.NextColumn();
+
             if (!string.IsNullOrEmpty(mob.MobFlag) && mob.MobFlag != "N/A" && _mapManagerService.CheckLocation(mob.MobLocation, out var location))
             {
                 ImGui.PushFont(UiBuilder.IconFont);
@@ -166,10 +174,12 @@ public class MaterialTableRenderer
             return;
         }
 
-        if (ImGui.BeginTable("MLH_PurchasedFromTable", 4, ImGuiTableFlags.ScrollY | ImGuiTableFlags.RowBg | ImGuiTableFlags.Borders | ImGuiTableFlags.NoHostExtendX | ImGuiTableFlags.Reorderable | ImGuiTableFlags.Sortable | ImGuiTableFlags.Resizable,
+        if (ImGui.BeginTable("MLH_PurchasedFromTable", 4,
+                             ImGuiTableFlags.ScrollY | ImGuiTableFlags.RowBg | ImGuiTableFlags.Borders | ImGuiTableFlags.NoHostExtendX | ImGuiTableFlags.Reorderable | ImGuiTableFlags.Sortable
+                             | ImGuiTableFlags.Resizable,
                              new Vector2(0f, textSize.Y * 13)))
         {
-            ImGui.TableSetupScrollFreeze(0,1);
+            ImGui.TableSetupScrollFreeze(0, 1);
             ImGui.TableSetupColumn("Vendor", ImGuiTableColumnFlags.WidthFixed | ImGuiTableColumnFlags.NoSort, 200f, (uint)LootSortId.Name);
             ImGui.TableSetupColumn("Location", ImGuiTableColumnFlags.WidthFixed | ImGuiTableColumnFlags.DefaultSort, 150f, (uint)LootSortId.Location);
             ImGui.TableSetupColumn("Position", ImGuiTableColumnFlags.WidthFixed | ImGuiTableColumnFlags.NoSort, 100f, (uint)LootSortId.Flag);
@@ -177,6 +187,7 @@ public class MaterialTableRenderer
             ImGui.TableHeadersRow();
 
             var tableSortSpecs = ImGui.TableGetSortSpecs();
+
             if (tableSortSpecs.SpecsDirty)
             {
                 var pExpression = Expression.Parameter(typeof(LootPurchase));

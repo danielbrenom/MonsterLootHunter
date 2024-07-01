@@ -40,7 +40,7 @@ public class ContextMenu : IServiceType, IDisposable
         _contextMenu.OnMenuOpened -= AddInventoryItem;
     }
 
-    private void AddInventoryItem(MenuOpenedArgs args)
+    private void AddInventoryItem(IMenuOpenedArgs args)
     {
         if (!_configuration.ContextMenuIntegration)
             return;
@@ -50,7 +50,7 @@ public class ContextMenu : IServiceType, IDisposable
             args.AddMenuItem(menuItem);
     }
 
-    private MenuItem? CreateMenuItem(MenuArgs args)
+    private MenuItem? CreateMenuItem(IMenuArgs args)
     {
         return args.Target switch
         {
@@ -65,12 +65,16 @@ public class ContextMenu : IServiceType, IDisposable
         var pluginWindow = _windowService.GetWindow(WindowConstants.MainWindowName);
         if (pluginWindow is not PluginUi window || itemId is null)
             return null;
+
         itemId = itemId > 500000 ? itemId - 500000 : itemId;
         if (!_itemManagerService.CheckSelectedItem(itemId.Value))
             return null;
+
         return new MenuItem
         {
-            Name = SearchString, OnClicked = _ =>
+            Name = SearchString,
+            PrefixChar = 'M',
+            OnClicked = _ =>
             {
                 window.IsOpen = true;
                 Task.Run(async () => await window.ChangeSelectedItem(itemId.Value));
@@ -78,7 +82,7 @@ public class ContextMenu : IServiceType, IDisposable
         };
     }
 
-    private MenuItem? CreateGameObjectItem(MenuArgs args)
+    private MenuItem? CreateGameObjectItem(IMenuArgs args)
     {
         return args.AddonName switch
         {
@@ -102,9 +106,11 @@ public class ContextMenu : IServiceType, IDisposable
         var uiModule = (UIModule*)_gameGui.GetUIModule();
         if (uiModule is null)
             return nint.Zero;
+
         var agents = uiModule->GetAgentModule();
         if (agents is null)
             return nint.Zero;
+
         var agent = agents->GetAgentByInternalId(id);
         return (nint)agent;
     }
