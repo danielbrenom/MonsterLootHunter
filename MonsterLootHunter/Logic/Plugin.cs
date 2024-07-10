@@ -36,11 +36,13 @@ public class Plugin : IDalamudPlugin
                                                                     .Register(pluginLog)
                                                                     .Register<ConfigWindow>()
                                                                     .Register<PluginUi>();
+
         PluginModule.Register(_pluginDependencyContainer);
         _pluginDependencyContainer.Resolve();
 
         _windowService.RegisterWindow(_pluginDependencyContainer.Retrieve<ConfigWindow>(), WindowConstants.ConfigWindowName);
         _windowService.RegisterWindow(_pluginDependencyContainer.Retrieve<PluginUi>(), WindowConstants.MainWindowName);
+
         CommandManager.AddHandler(PluginConstants.CommandSlash, new CommandInfo(OnCommand)
         {
             HelpMessage = PluginConstants.CommandHelperText

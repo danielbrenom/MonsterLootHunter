@@ -5,8 +5,8 @@
   "Description": "Check where you can obtain a material from monsters, duties, crafting, gathering or where they can be bought from NPCs.",
   "InternalName": "monsterLootHunter",
   "ApplicableVersion": "any",
-  "Changelog": "- API X update\n- Necessary and general service usage refactors",
-  "AssemblyVersion": "1.1.21.5",
+  "Changelog": "- Added mechanism for gatherables localization\n- Added options regarding data loading\n- Modified window rendering",
+  "AssemblyVersion": "1.2.21.5",
   "RepoUrl": "https://github.com/danielbrenom/MonsterLootHunter",
   "Tags": [
     "material",
