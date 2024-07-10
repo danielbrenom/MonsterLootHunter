@@ -1,7 +1,7 @@
 ﻿using MonsterLootHunter.Data;
 using Newtonsoft.Json;
 
-namespace MonsterLootHunter.Helpers;
+namespace MonsterLootHunter.Clients;
 
 public class GarlandClient : IDisposable
 {

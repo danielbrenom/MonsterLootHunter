@@ -1,4 +1,4 @@
-﻿using MonsterLootHunter.Helpers;
+﻿using MonsterLootHunter.Clients;
 using MonsterLootHunter.Logic;
 
 namespace MonsterLootHunter.Services;
@@ -13,6 +13,8 @@ public static class PluginModule
                  .Register<MaterialTableRenderer>()
                  .Register<WikiClient>()
                  .Register<ContextMenu>()
-                 .Register<GarlandClient>();
+                 .Register<GarlandClient>()
+                 .Register<ItemFetchService>()
+                 .Register<GatheringNodesService>();
     }
 }

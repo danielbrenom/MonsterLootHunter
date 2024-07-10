@@ -6,7 +6,6 @@ using Dalamud.Plugin.Services;
 using ImGuiNET;
 using Lumina.Excel.GeneratedSheets;
 using MonsterLootHunter.Data;
-using MonsterLootHunter.Helpers;
 using MonsterLootHunter.Logic;
 using MonsterLootHunter.Services;
 using MonsterLootHunter.Utils;
@@ -21,8 +20,7 @@ public class PluginUi : Window, IDisposable
     private readonly MaterialTableRenderer _materialTableRenderer;
     private readonly Configuration _configuration;
     private readonly ItemManagerService _itemManagerService;
-    private readonly WikiClient _wikiClient;
-    private readonly GarlandClient _garlandClient;
+    private readonly ItemFetchService _itemFetchService;
     private IDalamudTextureWrap? _selectedItemIcon;
     private Item? _selectedItem = new();
     private List<KeyValuePair<ItemSearchCategory, List<Item>>> _enumerableCategoriesAndItems = [];
@@ -47,25 +45,29 @@ public class PluginUi : Window, IDisposable
     #endregion
 
     public PluginUi(WindowService windowService, Configuration configuration, ImageService imageService, MaterialTableRenderer tableRenderer, ItemManagerService itemManagerService,
-                    WikiClient wikiClient, GarlandClient garlandClient, IPluginLog pluginLog)
+                    ItemFetchService itemFetchService, IPluginLog pluginLog)
         : base(WindowConstants.MainWindowName, ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoScrollWithMouse)
     {
         _windowService = windowService;
         _configuration = configuration;
         _imageService = imageService;
+        _itemFetchService = itemFetchService;
         _pluginLog = pluginLog;
-        _wikiClient = wikiClient;
-        _garlandClient = garlandClient;
         _itemManagerService = itemManagerService;
         _materialTableRenderer = tableRenderer;
         _scale = ImGui.GetIO().FontGlobalScale;
         _materialTableRenderer.SetScale(_scale);
+        SizeCondition = ImGuiCond.Always;
+    }
+
+    public override void PreDraw()
+    {
         SizeConstraints = new WindowSizeConstraints
         {
-            MinimumSize = new Vector2(800, 600) * _scale * _configuration.MinimumWindowScale,
-            MaximumSize = new Vector2(800, 600) * _scale * _configuration.MaximumWindowScale
+            MinimumSize = new Vector2(800, 600) * _configuration.MinimumWindowScale,
+            MaximumSize = new Vector2(800, 600) * _configuration.MaximumWindowScale
         };
-        SizeCondition = ImGuiCond.FirstUseEver;
+        base.PreDraw();
     }
 
     public override void Draw()
@@ -203,14 +205,13 @@ public class PluginUi : Window, IDisposable
                 }
 
                 ImGui.SameLine();
-                const string source = "Data provided by FFXIV Console Games Wiki (https://ffxiv.consolegameswiki.com)";
+                var source = $"{(_configuration.PreferWikiData ? "Data" : "Some data")} provided by FFXIV Console Games Wiki (https://ffxiv.consolegameswiki.com)";
                 ImGui.SetCursorPosX(ImGui.GetWindowContentRegionMax().X - ImGui.CalcTextSize(source).X);
                 ImGui.SetCursorPosY(ImGui.GetCursorPosY() - ImGui.GetFontSize() / 2.0f + 50 * _scale);
                 ImGui.Text(source);
 
                 #region Obtained From Table
 
-                ImGui.Text("Obtained From");
                 var mobList = _lootData?.LootLocations.OrderBy(m => m.MobName).ToList();
                 if (_configuration.UseLegacyViewer)
                     _materialTableRenderer.RenderLegacyMobTable(mobList, _itemTextSize);
@@ -223,7 +224,6 @@ public class PluginUi : Window, IDisposable
 
                 #region Purchased From Table
 
-                ImGui.Text("Purchased From");
                 var vendorList = _lootData?.LootPurchaseLocations.OrderBy(v => v.Vendor).ToList();
                 if (_configuration.UseLegacyViewer)
                     _materialTableRenderer.RenderLegacyVendorTable(vendorList, _itemTextSize);
@@ -262,13 +262,14 @@ public class PluginUi : Window, IDisposable
 
             _lootData = default;
             var token = _tokenSource.Token;
-            var itemName = _configuration.UsingAnotherLanguage() ? await _garlandClient.GetItemName(_selectedItem.RowId, token) : _selectedItem.Name.ToString();
-
-            _lootData = await _wikiClient.GetLootData(itemName, token)
-                                         .ConfigureAwait(false);
+            _lootData = await _itemFetchService.FetchLootData(_selectedItem, token);
             token.ThrowIfCancellationRequested();
         }
         catch (OperationCanceledException e)
+        {
+            _pluginLog.Error(e, "Request for loot $1 info failed", _selectedItem?.Name ?? string.Empty);
+        }
+        catch (Exception e)
         {
             _pluginLog.Error(e, "Request for loot $1 info failed", _selectedItem?.Name ?? string.Empty);
         }

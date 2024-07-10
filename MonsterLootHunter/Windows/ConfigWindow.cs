@@ -1,4 +1,6 @@
 ﻿using System.Numerics;
+using Dalamud.Interface;
+using Dalamud.Interface.Utility.Raii;
 using Dalamud.Interface.Windowing;
 using ImGuiNET;
 using MonsterLootHunter.Logic;
@@ -14,16 +16,19 @@ public class ConfigWindow : Window, IDisposable
     private float _maxScale;
     private bool _contextIntegration;
     private bool _legacyViewer;
+    private bool _preferWikiData;
+    private bool _appendData;
 
-    public ConfigWindow(Configuration configuration) : base(WindowConstants.ConfigWindowName, ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoScrollWithMouse | ImGuiWindowFlags.NoResize)
+    public ConfigWindow(Configuration configuration)
+        : base(WindowConstants.ConfigWindowName, ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoScrollWithMouse | ImGuiWindowFlags.NoResize)
     {
         _configuration = configuration;
         _scale = ImGui.GetIO().FontGlobalScale;
         Size = new Vector2(250, 150) * _scale;
         SizeConstraints = new WindowSizeConstraints
         {
-            MinimumSize = new Vector2(250, 150) * _scale,
-            MaximumSize = new Vector2(250, 150) * _scale * 1.5f
+            MinimumSize = new Vector2(250, 300),
+            MaximumSize = new Vector2(250, 300) * 1.5f
         };
         SizeCondition = ImGuiCond.FirstUseEver;
         CheckConfiguration();
@@ -33,6 +38,8 @@ public class ConfigWindow : Window, IDisposable
     {
         _contextIntegration = _configuration.ContextMenuIntegration;
         _legacyViewer = _configuration.UseLegacyViewer;
+        _preferWikiData = _configuration.PreferWikiData;
+        _appendData = _configuration.AppendInternalData;
         _minScale = Math.Min(_configuration.MinimumWindowScale, 1f);
         _maxScale = Math.Min(_configuration.MaximumWindowScale, 2f);
     }
@@ -42,8 +49,22 @@ public class ConfigWindow : Window, IDisposable
         ImGui.BeginChild("configurations", new Vector2(0, -1f) * _scale);
         if (ImGui.Checkbox("Context menu integration", ref _contextIntegration))
             _configuration.ContextMenuIntegration = _contextIntegration;
-        if(ImGui.Checkbox("Use legacy viewer", ref _legacyViewer))
+        if (ImGui.Checkbox("Use legacy viewer", ref _legacyViewer))
             _configuration.UseLegacyViewer = _legacyViewer;
+        if (ImGui.Checkbox("Prefer wiki data for gatherables", ref _preferWikiData))
+            _configuration.PreferWikiData = _preferWikiData;
+
+        if (_preferWikiData)
+        {
+            ImGui.SetCursorPosX(25 * _scale);
+            if (ImGui.Checkbox("Include internal gatherable data", ref _appendData))
+                _configuration.AppendInternalData = _appendData;
+            ImGui.SetCursorPosX(25 * _scale);
+            var f = new ImRaii.Color();
+            ImGui.TextColored(new Vector4(234f, 217f, 28f, 255f).NormalizeToUnitRange(), "Select item again for change to take effect.");
+            ImGui.SetCursorPosX(25 * _scale);
+            ImGui.TextColored(new Vector4(234f, 217f, 28f, 255f).NormalizeToUnitRange(), "New data may provide map marker.");
+        }
 
         ImGui.Text("Window scale values");
         ImGui.Text("Minimum size scale");
@@ -52,7 +73,6 @@ public class ConfigWindow : Window, IDisposable
         ImGui.Text("Maximum size scale");
         ImGui.SameLine();
         ImGui.DragFloat("##max_size", ref _maxScale, 0.5f, 1.5f, 2f, "%.1f", ImGuiSliderFlags.None);
-        ImGui.TextColored(new Vector4(153f, 56f, 56f, 1.0f), "Reload plugin for scales to take effect");
 
         if (ImGui.Button("Save and close"))
             IsOpen = false;

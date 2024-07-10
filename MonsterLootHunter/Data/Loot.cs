@@ -1,4 +1,6 @@
-﻿namespace MonsterLootHunter.Data;
+﻿using MonsterLootHunter.Data.Gatherable;
+
+namespace MonsterLootHunter.Data;
 
 public class LootData(string lootName)
 {
@@ -13,7 +15,16 @@ public class LootDrops
     public string MobLocation { get; set; } = string.Empty;
     public string MobLevel { get; set; } = string.Empty;
     public string MobFlag { get; set; } = string.Empty;
-    public MaterialType Type { get; set; }
+    public LootNode? Node { get; set; }
+}
+
+public class LootNode
+{
+    public uint TerritoryId { get; set; }
+    public uint MapId { get; set; }
+    public int[] LootPosition { get; set; } = new int[2];
+    public GatheringKind Kind { get; set; }
+    public int PositionRadius { get; set; }
 }
 
 public class LootPurchase
