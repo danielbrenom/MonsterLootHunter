@@ -3,11 +3,14 @@ using Fizzler.Systems.HtmlAgilityPack;
 using HtmlAgilityPack;
 using MonsterLootHunter.Data;
 using MonsterLootHunter.Utils;
+using System.Collections.Concurrent;
 
 namespace MonsterLootHunter.Clients
 {
     public partial class WikiParser
     {
+        private delegate IEnumerable<LootDrops> Processors(HtmlNode node);
+
         [GeneratedRegex(@"(\d+\.?\d*)", RegexOptions.Compiled)]
         private static partial Regex CoordinatesRegex();
 
@@ -23,19 +26,30 @@ namespace MonsterLootHunter.Clients
         [GeneratedRegex(@"(?:-\s+)(.+)(?:\s+\()", RegexOptions.IgnoreCase | RegexOptions.Compiled)]
         private static partial Regex LocationNameAlternativeRegex();
 
+        [GeneratedRegex(@"&#.+;")]
+        private static partial Regex UnicodeCharacterRemovalRegex();
+
         public static Task<LootData> ParseResponse(HtmlDocument document, LootData lootData)
         {
             var body = document.DocumentNode.QuerySelector("div#bodyContent");
             var bodyContent = body.QuerySelector("div.mw-content-ltr div.mw-parser-output");
-            lootData.LootLocations.AddRange(GetDutyDrops(bodyContent));
-            lootData.LootLocations.AddRange(GetMonsterDropsFromTable(bodyContent));
-            lootData.LootLocations.AddRange(GetPossibleRecipe(bodyContent));
-            lootData.LootLocations.AddRange(GetPossibleTreasureHunts(bodyContent));
-            lootData.LootLocations.AddRange(GetPossibleDesynthesis(bodyContent));
-            lootData.LootLocations.AddRange(GetPossibleGathering(bodyContent));
-            lootData.LootLocations.AddRange(GetPossibleGatheringTable(bodyContent));
-            lootData.LootPurchaseLocations.AddRange(GetVendorPurchases(bodyContent));
+            var concurrentList = new ConcurrentBag<LootDrops>();
+            Parallel.Invoke(() => { AddToBag(GetDutyDrops, bodyContent); },
+                            () => { AddToBag(GetMonsterDropsFromTable, bodyContent); },
+                            () => { AddToBag(GetPossibleRecipe, bodyContent); },
+                            () => { AddToBag(GetPossibleTreasureHunts, bodyContent); },
+                            () => { AddToBag(GetPossibleDesynthesis, bodyContent); },
+                            () => { AddToBag(GetPossibleGathering, bodyContent); },
+                            () => { AddToBag(GetPossibleGatheringTable, bodyContent); },
+                            () => { lootData.LootPurchaseLocations.AddRange(GetVendorPurchases(bodyContent)); });
+
+            lootData.LootLocations.AddRange(concurrentList.AsEnumerable());
             return Task.FromResult(lootData);
+
+            void AddToBag(Processors processor, HtmlNode node)
+            {
+                foreach (var gather in processor(node)) concurrentList.Add(gather);
+            }
         }
 
         private static IEnumerable<LootDrops> GetDutyDrops(HtmlNode node)
@@ -49,13 +63,19 @@ namespace MonsterLootHunter.Clients
             if (dutyListSanitized is null)
                 return [];
 
-            return dutyListSanitized.Select(duty => new LootDrops
+            var dutyDrops = new ConcurrentBag<LootDrops>();
+            Parallel.ForEach(dutyListSanitized, duty =>
             {
-                MobName = "Duty",
-                MobLocation = Regex.Replace(duty, @"&#.+;", string.Empty),
-                MobFlag = string.Empty,
-                MobLevel = string.Empty
+                dutyDrops.Add(new LootDrops
+                {
+                    MobName = "Duty",
+                    MobLocation = UnicodeCharacterRemovalRegex().Replace(duty, string.Empty),
+                    MobFlag = string.Empty,
+                    MobLevel = string.Empty
+                });
             });
+
+            return dutyDrops.AsEnumerable();
         }
 
         private static IEnumerable<LootDrops> GetMonsterDropsFromTable(HtmlNode node)
@@ -66,15 +86,22 @@ namespace MonsterLootHunter.Clients
 
             dropList.RemoveAt(0);
 
-            return dropList.Select(drop => drop.QuerySelectorAll("td").ToList())
-                           .Select(info => new { info, flagParsed = CoordinatesRegex().Matches(info.TryGet(nodes => nodes.Last().InnerText)) })
-                           .Select(data => new LootDrops
-                            {
-                                MobName = data.info.TryGet(nodes => nodes[0].InnerText).Replace("\n", ""),
-                                MobLocation = data.info.TryGet(nodes => nodes.Last().InnerText).Split("(")[0].Replace("\n", "").TrimEnd(),
-                                MobFlag = data.flagParsed.Count == 2 ? $"({data.flagParsed[0]},{data.flagParsed[1]})" : string.Empty,
-                                MobLevel = data.info.TryGet(nodes => nodes[1].InnerText).Replace("\n", ""),
-                            });
+            var dutyDrops = new ConcurrentBag<LootDrops>();
+            Parallel.ForEach(dropList, drops =>
+            {
+                var info = drops.QuerySelectorAll("td").ToList();
+                var flagWasParsed = CoordinatesRegex().TryMatches(info.TryGet(nodes => nodes.Last().InnerText), out var flagParsed);
+
+                dutyDrops.Add(new LootDrops
+                {
+                    MobName = info.TryGet(nodes => nodes[0].InnerText).Replace("\n", ""),
+                    MobLocation = info.TryGet(nodes => nodes.Last().InnerText).Split("(")[0].Replace("\n", "").TrimEnd(),
+                    MobFlag = flagWasParsed ? $"({flagParsed[0]},{flagParsed[1]})" : string.Empty,
+                    MobLevel = info.TryGet(nodes => nodes[1].InnerText).Replace("\n", ""),
+                });
+            });
+
+            return dutyDrops.AsEnumerable();
         }
 
         private static IEnumerable<LootPurchase> GetVendorPurchases(HtmlNode node)
@@ -90,27 +117,36 @@ namespace MonsterLootHunter.Clients
                 return [];
 
             purchaseList.RemoveAt(0);
-            return purchaseList.Select(vendorNode => vendorNode.QuerySelectorAll("td").ToList())
-                               .Select(purchaseInformation => new { purchaseInformation, locationAndFlag = purchaseInformation.TryGet(nodes => nodes[1].InnerText).Split("(") })
-                               .Select(t => new LootPurchase
-                                {
-                                    Vendor = t.purchaseInformation.TryGet(nodes => nodes[0].InnerText).Replace("\n", ""),
-                                    Location = t.locationAndFlag[0].Replace("\n", "").TrimEnd(),
-                                    FlagPosition = $"({t.locationAndFlag[1]}".Replace("\n", ""),
-                                    Cost = t.purchaseInformation.TryGet(nodes => nodes[2].InnerText).Replace("&#160;", "").Replace("\n", ""),
-                                    CostType = t.purchaseInformation.TryGet(nodes => nodes[2].QuerySelector("span a").Attributes["title"].Value)
-                                });
+
+            var vendors = new ConcurrentBag<LootPurchase>();
+
+            Parallel.ForEach(purchaseList, vendorNode =>
+            {
+                var vendor = vendorNode.QuerySelectorAll("td").ToList();
+                var locationAndFlag = vendor.TryGet(nodes => nodes[1].InnerText).Split("(");
+
+                vendors.Add(new LootPurchase
+                {
+                    Vendor = vendor.TryGet(nodes => nodes[0].InnerText).Replace("\n", ""),
+                    Location = locationAndFlag[0].Replace("\n", "").TrimEnd(),
+                    FlagPosition = $"({locationAndFlag[1]}".Replace("\n", ""),
+                    Cost = vendor.TryGet(nodes => nodes[3].InnerText).Replaces("&#160;", string.Empty, "\n", string.Empty),
+                    CostType = vendor.TryGet(nodes => nodes[3].QuerySelector("span a").Attributes["title"].Value).Replace("\n", "").TrimEnd()
+                });
+            });
+
+            return vendors.AsEnumerable();
         }
 
-        private static IEnumerable<LootDrops> GetPossibleRecipe(HtmlNode node)
+        private static LootDrops[] GetPossibleRecipe(HtmlNode node)
         {
             var recipeBox = node.QuerySelector("div.recipe-box");
             if (recipeBox is null)
                 return [];
 
             var recipeData = recipeBox.QuerySelector("div.wrapper").QuerySelectorAll("dd").ToList();
-            return new[]
-            {
+            return
+            [
                 new LootDrops
                 {
                     MobName = $"Crafter Class: {recipeData.TryGet(nodes => nodes[2].QuerySelectorAll("a").ToList()[1].InnerText)}",
@@ -118,7 +154,7 @@ namespace MonsterLootHunter.Clients
                     MobFlag = string.Empty,
                     MobLevel = recipeData.TryGet(nodes => nodes[3].InnerText),
                 }
-            };
+            ];
         }
 
         private static IEnumerable<LootDrops> GetPossibleTreasureHunts(HtmlNode node)

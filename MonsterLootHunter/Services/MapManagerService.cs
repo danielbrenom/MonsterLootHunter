@@ -44,10 +44,9 @@ public partial class MapManagerService
                 return;
 
             var flagParsed = CoordinatesRegex().Matches(position);
-            var coords = new float[2];
-            coords[0] = float.Parse(flagParsed[0].Value, CultureInfo.InvariantCulture);
-            coords[1] = float.Parse(flagParsed[1].Value, CultureInfo.InvariantCulture);
-            var mapPayload = new MapLinkPayload(location.RowId, location.Map.Row, coords[0], coords[1], 0.0f);
+            var x = float.Parse(flagParsed[0].Value, CultureInfo.InvariantCulture);
+            var y = float.Parse(flagParsed[1].Value, CultureInfo.InvariantCulture);
+            var mapPayload = new MapLinkPayload(location.RowId, location.Map.Row, x, y, 0.0f);
             _gameGui.OpenMapWithMapLink(mapPayload);
         }
         catch (Exception e)
