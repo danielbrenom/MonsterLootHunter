@@ -8,12 +8,12 @@ namespace MonsterLootHunter.Clients;
 public class WikiClient(IPluginLog pluginLog)
 {
     private readonly HtmlWeb _webClient = new();
-    private readonly IPluginLog _pluginLog = pluginLog;
 
     public async Task GetLootData(LootData data, CancellationToken cancellationToken)
     {
         if (_itemNameFix.TryGetValue(data.LootName, out var fixedName))
             data.LootName = fixedName;
+
         var uri = new UriBuilder(string.Format(PluginConstants.WikiBaseUrl, data.LootName.Replace(" ", "_"))).ToString();
         var pageResponse = await _webClient.LoadFromWebAsync(uri, cancellationToken);
 
@@ -23,7 +23,7 @@ public class WikiClient(IPluginLog pluginLog)
         }
         catch (Exception e)
         {
-            _pluginLog.Error("{0}\n{1}", e.Message, e.StackTrace ?? string.Empty);
+            pluginLog.Error("{0}\n{1}", e.Message, e.StackTrace ?? string.Empty);
         }
     }
 
