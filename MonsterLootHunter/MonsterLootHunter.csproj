@@ -13,9 +13,9 @@
         <ProduceReferenceAssembly>false</ProduceReferenceAssembly>
         <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
         <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
-        <AssemblyVersion>1.2.21.6</AssemblyVersion>
-        <FileVersion>1.2.21.6</FileVersion>
-        <PackageVersion>1.2.21.6</PackageVersion>
+        <AssemblyVersion>1.2.21.7</AssemblyVersion>
+        <FileVersion>1.2.21.7</FileVersion>
+        <PackageVersion>1.2.21.7</PackageVersion>
         <RestorePackagesWithLockFile>true</RestorePackagesWithLockFile>
         <ImplicitUsings>true</ImplicitUsings>
         <IsPackable>false</IsPackable>

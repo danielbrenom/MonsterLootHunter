@@ -29,6 +29,9 @@ public class WikiClient(IPluginLog pluginLog)
 
     private readonly Dictionary<string, string> _itemNameFix = new()
     {
-        { "Blue Cheese", "Blue Cheese (Item)" }
+        { "Blue Cheese", "Blue Cheese (Item)" },
+        { "Gelatin", "Gelatin (Item)" },
+        { "Leather", "Leather (Item)" },
+        { "Morel", "Morel (Item)" }
     };
 }
