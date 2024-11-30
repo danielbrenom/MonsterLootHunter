@@ -2,7 +2,7 @@
 using Dalamud.Interface.Windowing;
 using Dalamud.Plugin.Services;
 using ImGuiNET;
-using Lumina.Excel.GeneratedSheets;
+using Lumina.Excel.Sheets;
 using MonsterLootHunter.Data.Gatherable;
 using MonsterLootHunter.Services;
 using MonsterLootHunter.Utils;
@@ -68,28 +68,28 @@ public class DebugWindow : Window
         {
             try
             {
-                _gatherables = _dataManager.GetExcelSheet<GatheringItem>()?
-                                           .Where(g => g.Item != 0 && g.Item < 1000000)
+                _gatherables = _dataManager.GetExcelSheet<GatheringItem>()
+                                           .Where(g => g.Item.RowId != 0 && g.Item.RowId < 1000000)
                                            .GroupBy(g => g.Item)
                                            .Select(group => group.First())
-                                           .ToDictionary(g => (uint)g.Item, g =>
+                                           .ToDictionary(g => g.Item.RowId, g =>
                                             {
-                                                var possibleItem = _items?.SingleOrDefault(i => (uint)g.Item == i.RowId) ?? new Item();
+                                                var possibleItem = _items?.SingleOrDefault(i => g.Item.RowId == i.RowId) ?? new Item();
                                                 return new Gatherable(possibleItem, g);
                                             }) ?? new Dictionary<uint, Gatherable>();
                 _gatherablesByGatherId = _gatherables.Values.ToDictionary(g => g.GatheringId, g => g);
                 // Create GatheringItemPoint dictionary.
-                var tmpGatheringItemPoint = _dataManager.GetExcelSheet<GatheringItemPoint>()!
-                                                        .GroupBy(row => row.GatheringPoint.Row)
+                var tmpGatheringItemPoint = _dataManager.GetSubrowExcelSheet<GatheringItemPoint>().SelectMany(g => g)
+                                                        .GroupBy(row => row.GatheringPoint.RowId)
                                                         .ToDictionary(group => group.Key, group => group.Select(g => g.RowId).Distinct().ToList());
 
                 var tmpGatheringPoints = _dataManager.GetExcelSheet<GatheringPoint>()!
-                                                     .Where(row => row.PlaceName.Row > 0)
-                                                     .GroupBy(row => row.GatheringPointBase.Row)
+                                                     .Where(row => row.PlaceName.RowId > 0)
+                                                     .GroupBy(row => row.GatheringPointBase.RowId)
                                                      .ToDictionary(group => group.Key, group => group.Select(g => g.RowId).Distinct().ToList());
 
                 _gatheringNodes = _dataManager.GetExcelSheet<GatheringPointBase>()?
-                                              .Where(b => b.GatheringType.Row < 4)
+                                              .Where(b => b.GatheringType.RowId < 4)
                                               .Select(b => new GatheringNode(_dataManager, _gatherablesByGatherId, tmpGatheringPoints, tmpGatheringItemPoint, b))
                                               .Where(n => n.Items.Count > 0)
                                               .ToDictionary(n => n.Id, n => n)
