@@ -1,4 +1,4 @@
-﻿using Lumina.Excel.GeneratedSheets;
+﻿using Lumina.Excel.Sheets;
 
 namespace MonsterLootHunter.Data.Gatherable;
 
@@ -25,8 +25,8 @@ public class Gatherable
         if (ItemData.RowId == 0)
             return;
 
-        var levelData = gatheringData.GatheringItemLevel?.Value;
-        _levelStars = levelData == null ? 0 : (levelData.GatheringItemLevel << 3) + levelData.Stars;
+        var levelData = gatheringData.GatheringItemLevel.ValueNullable;
+        _levelStars = levelData == null ? 0 : (levelData.Value.GatheringItemLevel << 3) + levelData.Value.Stars;
         Name = ItemData.Name.ToString();
     }
 

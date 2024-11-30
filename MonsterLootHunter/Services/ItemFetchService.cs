@@ -1,4 +1,4 @@
-﻿using Lumina.Excel.GeneratedSheets;
+﻿using Lumina.Excel.Sheets;
 using MonsterLootHunter.Clients;
 using MonsterLootHunter.Data;
 using MonsterLootHunter.Logic;
@@ -32,10 +32,5 @@ public class ItemFetchService(Configuration configuration, GarlandClient garland
     }
 
     private async Task<string> CheckItemName(Item item, CancellationToken token)
-    {
-        if (configuration.UsingAnotherLanguage)
-            return await garlandClient.GetItemName(item.RowId, token);
-
-        return item.Name.ToString();
-    }
+        => configuration.UsingAnotherLanguage ? await garlandClient.GetItemName(item.RowId, token) : item.Name.ToString();
 }

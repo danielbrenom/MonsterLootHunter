@@ -4,7 +4,7 @@ using Dalamud.Interface.Textures.TextureWraps;
 using Dalamud.Interface.Windowing;
 using Dalamud.Plugin.Services;
 using ImGuiNET;
-using Lumina.Excel.GeneratedSheets;
+using Lumina.Excel.Sheets;
 using MonsterLootHunter.Data;
 using MonsterLootHunter.Logic;
 using MonsterLootHunter.Services;
@@ -22,7 +22,7 @@ public class PluginUi : Window, IDisposable
     private readonly ItemManagerService _itemManagerService;
     private readonly ItemFetchService _itemFetchService;
     private IDalamudTextureWrap? _selectedItemIcon;
-    private Item? _selectedItem = new();
+    private Item? _selectedItem;
     private List<KeyValuePair<ItemSearchCategory, List<Item>>> _enumerableCategoriesAndItems = [];
     private LootData? _lootData;
     private readonly float _scale;
@@ -88,7 +88,7 @@ public class PluginUi : Window, IDisposable
 
             foreach (var (category, items) in _enumerableCategoriesAndItems)
             {
-                if (!ImGui.TreeNode(category.Name + "##cat" + category.RowId))
+                if (!ImGui.TreeNode($"{category.Name}##cat{category.RowId}"))
                     continue;
 
                 ImGui.Unindent(ImGui.GetTreeNodeToLabelSpacing());
@@ -131,7 +131,7 @@ public class PluginUi : Window, IDisposable
                         nodeFlags |= ImGuiTreeNodeFlags.Selected;
                     }
 
-                    ImGui.TreeNodeEx(item.Name + "##item" + item.RowId, nodeFlags);
+                    ImGui.TreeNodeEx($"{item.Name}##item{item.RowId}", nodeFlags);
 
                     if (!ImGui.IsItemClicked())
                         continue;
@@ -171,7 +171,7 @@ public class PluginUi : Window, IDisposable
             {
                 try
                 {
-                    _selectedItemIcon = _imageService.GetIconTexture(_selectedItem.Icon);
+                    _selectedItemIcon = _imageService.GetIconTexture(_selectedItem.Value.Icon);
 
                     if (_selectedItemIcon != null)
                     {
@@ -189,7 +189,7 @@ public class PluginUi : Window, IDisposable
 
                 ImGui.SameLine();
                 ImGui.SetCursorPosY(ImGui.GetCursorPosY() - ImGui.GetFontSize() / 2.0f + 19 * _scale);
-                ImGui.Text(_selectedItem.Name ?? string.Empty);
+                ImGui.Text(_selectedItem?.Name.ToString() ?? string.Empty);
 
                 if (Loading)
                 {
@@ -262,7 +262,7 @@ public class PluginUi : Window, IDisposable
 
             _lootData = default;
             var token = _tokenSource.Token;
-            _lootData = await _itemFetchService.FetchLootData(_selectedItem, token);
+            _lootData = await _itemFetchService.FetchLootData(_selectedItem.Value, token);
             token.ThrowIfCancellationRequested();
         }
         catch (OperationCanceledException e)

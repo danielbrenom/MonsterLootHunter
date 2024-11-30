@@ -4,7 +4,7 @@ using Dalamud.Game.Text.SeStringHandling.Payloads;
 using Dalamud.Plugin.Services;
 using FFXIVClientStructs.FFXIV.Client.UI.Agent;
 using Lumina.Excel;
-using Lumina.Excel.GeneratedSheets;
+using Lumina.Excel.Sheets;
 using MonsterLootHunter.Data.Gatherable;
 using MonsterLootHunter.Utils;
 using MapType = FFXIVClientStructs.FFXIV.Client.UI.Agent.MapType;
@@ -19,20 +19,20 @@ public partial class MapManagerService
     private readonly IGameGui _gameGui;
     private readonly IPluginLog _pluginLog;
     private List<TerritoryType> CachedTerritories { get; }
-    private ExcelSheet<GatheringType> _icons;
+    private readonly ExcelSheet<GatheringType> _icons;
 
     public MapManagerService(IDataManager dataManager, IGameGui gameGui, IPluginLog pluginLog)
     {
         _gameGui = gameGui;
         _pluginLog = pluginLog;
-        CachedTerritories = dataManager.GetExcelSheet<TerritoryType>()?.ToList() ?? [];
-        _icons = dataManager.GetExcelSheet<GatheringType>()!;
+        CachedTerritories = dataManager.GetExcelSheet<TerritoryType>().ToList();
+        _icons = dataManager.GetExcelSheet<GatheringType>();
     }
 
     public bool CheckLocation(string locationName, out TerritoryType? territoryType)
     {
         locationName = locationName.Contains('-') ? locationName.Split('-')[0].Trim() : locationName.Trim();
-        territoryType = CachedTerritories.FirstOrDefault(t => t.PlaceName.Value != null && t.PlaceName.Value.Name.ToString().Contains(locationName, StringComparison.InvariantCultureIgnoreCase));
+        territoryType = CachedTerritories.FirstOrDefault(t => t.PlaceName.IsValid && t.PlaceName.Value.Name.ToString().Contains(locationName, StringComparison.InvariantCultureIgnoreCase));
         return territoryType is not null;
     }
 
@@ -40,13 +40,14 @@ public partial class MapManagerService
     {
         try
         {
-            if (location is null)
+            if (!location.HasValue)
                 return;
 
+            var pureLocation = location.Value;
             var flagParsed = CoordinatesRegex().Matches(position);
             var x = float.Parse(flagParsed[0].Value, CultureInfo.InvariantCulture);
             var y = float.Parse(flagParsed[1].Value, CultureInfo.InvariantCulture);
-            var mapPayload = new MapLinkPayload(location.RowId, location.Map.Row, x, y, 0.0f);
+            var mapPayload = new MapLinkPayload(pureLocation.RowId, pureLocation.Map.Value.RowId, x, y, 0.0f);
             _gameGui.OpenMapWithMapLink(mapPayload);
         }
         catch (Exception e)
@@ -63,10 +64,7 @@ public partial class MapManagerService
         {
             var (x, y) = coordinates;
             var territory = CachedTerritories.FirstOrDefault(t => t.RowId == location);
-            var map = territory?.Map.Value;
-
-            if (territory is null || map is null)
-                return;
+            var map = territory.Map.Value;
 
             var icon = GetIcon(kind);
             if (mapInstance is null)
@@ -76,7 +74,7 @@ public partial class MapManagerService
             mapInstance->AddGatheringTempMarker(MapUtils.IntegerToInternal(x, map.SizeFactor),
                                                 MapUtils.IntegerToInternal(y, map.SizeFactor),
                                                 radius, icon, 4u, lootName);
-            mapInstance->OpenMap(territory.Map.Row, territory.RowId, lootName, MapType.GatheringLog);
+            mapInstance->OpenMap(territory.Map.RowId, territory.RowId, lootName, MapType.GatheringLog);
         }
         catch (Exception e)
         {
@@ -88,13 +86,13 @@ public partial class MapManagerService
     {
         return kind switch
         {
-            GatheringKind.Miner => (uint)_icons.GetRow(0)!.IconMain,
-            GatheringKind.Mining => (uint)_icons.GetRow(0)!.IconMain,
-            GatheringKind.Quarrying => (uint)_icons.GetRow(1)!.IconMain,
-            GatheringKind.Botanist => (uint)_icons.GetRow(2)!.IconMain,
-            GatheringKind.Logging => (uint)_icons.GetRow(2)!.IconMain,
-            GatheringKind.Harvesting => (uint)_icons.GetRow(3)!.IconMain,
-            GatheringKind.Spearfishing => (uint)_icons.GetRow(4)!.IconMain,
+            GatheringKind.Miner => (uint)_icons.GetRow(0).IconMain,
+            GatheringKind.Mining => (uint)_icons.GetRow(0).IconMain,
+            GatheringKind.Quarrying => (uint)_icons.GetRow(1).IconMain,
+            GatheringKind.Botanist => (uint)_icons.GetRow(2).IconMain,
+            GatheringKind.Logging => (uint)_icons.GetRow(2).IconMain,
+            GatheringKind.Harvesting => (uint)_icons.GetRow(3).IconMain,
+            GatheringKind.Spearfishing => (uint)_icons.GetRow(4).IconMain,
             GatheringKind.Fisher => 60465,
             _ => throw new ArgumentOutOfRangeException(nameof(kind), kind, null)
         };
