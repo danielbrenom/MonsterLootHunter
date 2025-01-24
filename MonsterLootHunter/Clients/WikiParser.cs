@@ -272,7 +272,7 @@ namespace MonsterLootHunter.Clients
                    select new LootDrops
                    {
                        MobName = columns.TryGet(nodes => nodes[0].ChildNodes[1].InnerText),
-                       MobLocation = columns.TryGet(nodes => nodes[1].QuerySelector("a").InnerText),
+                       MobLocation = $"{columns.TryGet(nodes => nodes[1].QuerySelectorAll("a").ToList()[0].InnerText)} - {columns.TryGet(nodes => nodes[1].QuerySelectorAll("a").ToList()[1].InnerText)}",
                        MobFlag = flagParsed.Count == 2 ? $"({flagParsed[0].Value},{flagParsed[1].Value})" : string.Empty,
                        MobLevel = columns.TryGet(nodes => nodes[2].ChildNodes[0].InnerText),
                    };

@@ -12,8 +12,5 @@ public partial class GatheringNode
     public bool HasItems(params Gatherable[] it)
         => it.Length == 0 || Items.Any(it.Contains);
 
-    private void AddNodeToItem(Gatherable item)
-    {
-        item.NodeList.Add(this);
-    }
+    private void AddNodeToItem(Gatherable item) => item.NodeList.Add(this);
 }
