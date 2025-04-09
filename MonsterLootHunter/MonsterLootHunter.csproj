@@ -3,7 +3,7 @@
     <PropertyGroup>
         <Authors>Sylf</Authors>
         <Company>Guiomarino Dev</Company>
-        <Version>1.2.24.7</Version>
+        <Version>1.3.24.7</Version>
         <Description>A monster loot finder plugin.</Description>
         <Copyright>Daniel Guiomarino</Copyright>
         <PackageProjectUrl>https://github.com/danielbrenom/MonsterLootHunter</PackageProjectUrl>
@@ -14,9 +14,9 @@
         <ProduceReferenceAssembly>false</ProduceReferenceAssembly>
         <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
         <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
-        <AssemblyVersion>1.2.24.7</AssemblyVersion>
-        <FileVersion>1.2.24.7</FileVersion>
-        <PackageVersion>1.2.24.7</PackageVersion>
+        <AssemblyVersion>1.3.24.7</AssemblyVersion>
+        <FileVersion>1.3.24.7</FileVersion>
+        <PackageVersion>1.3.24.7</PackageVersion>
         <RestorePackagesWithLockFile>true</RestorePackagesWithLockFile>
         <ImplicitUsings>true</ImplicitUsings>
         <IsPackable>false</IsPackable>

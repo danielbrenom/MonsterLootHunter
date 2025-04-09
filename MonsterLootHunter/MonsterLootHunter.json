@@ -5,8 +5,8 @@
   "Description": "Check where you can obtain a material from monsters, duties, crafting, gathering or where they can be bought from NPCs.",
   "InternalName": "monsterLootHunter",
   "ApplicableVersion": "any",
-  "Changelog": "- Fixed issues with map button link\n- Fixed map territory data loading\n- Fixed gathering location parsing",
-  "AssemblyVersion": "1.2.24.7",
+  "Changelog": "- Update for API 12",
+  "AssemblyVersion": "1.3.24.7",
   "RepoUrl": "https://github.com/danielbrenom/MonsterLootHunter",
   "Tags": [
     "material",
