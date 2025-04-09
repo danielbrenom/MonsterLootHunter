@@ -82,3 +82,6 @@ gen
 obj
 *.user
 bin
+
+# Visual Studio
+.vs/
