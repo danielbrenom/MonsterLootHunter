@@ -60,14 +60,14 @@ public class ContextMenu : IServiceType, IDisposable
         };
     }
 
-    private MenuItem? CreateMenuItem(ulong? itemId)
+    private MenuItem? CreateMenuItem(uint? itemId)
     {
         var pluginWindow = _windowService.GetWindow(WindowConstants.MainWindowName);
         if (pluginWindow is not PluginUi window || itemId is null)
             return null;
 
-        itemId = itemId > 500000 ? itemId - 500000 : itemId;
-        if (!_itemManagerService.CheckSelectedItem(itemId.Value))
+        var normalizedItemId = itemId.Value > 500000 ? itemId.Value - 500000 : itemId.Value;
+        if (!_itemManagerService.CheckSelectedItem(normalizedItemId))
             return null;
 
         return new MenuItem
@@ -98,12 +98,12 @@ public class ContextMenu : IServiceType, IDisposable
     private MenuItem? CheckGameObjectItem(string name, int offset)
         => CheckGameObjectItem(_gameGui.FindAgentInterface(name), offset);
 
-    private unsafe MenuItem? CheckGameObjectItem(nint agent, int offset)
-        => agent != nint.Zero ? CreateMenuItem(*(uint*)(agent + offset)) : null;
+    private unsafe MenuItem? CheckGameObjectItem(IntPtr agent, int offset)
+        => agent != IntPtr.Zero ? CreateMenuItem(*(uint*)(agent + offset)) : null;
 
-    private unsafe nint AgentById(AgentId id)
+    private unsafe IntPtr AgentById(AgentId id)
     {
-        var uiModule = (UIModule*)_gameGui.GetUIModule();
+        var uiModule = (UIModule*)_gameGui.GetUIModule().Address;
         if (uiModule is null)
             return nint.Zero;
 
@@ -112,7 +112,7 @@ public class ContextMenu : IServiceType, IDisposable
             return nint.Zero;
 
         var agent = agents->GetAgentByInternalId(id);
-        return (nint)agent;
+        return (IntPtr)agent;
     }
 
     public void Dispose()
