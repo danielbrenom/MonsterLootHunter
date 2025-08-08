@@ -1,9 +1,9 @@
 ﻿using System.Numerics;
+using Dalamud.Bindings.ImGui;
 using Dalamud.Interface;
 using Dalamud.Interface.Textures.TextureWraps;
 using Dalamud.Interface.Windowing;
 using Dalamud.Plugin.Services;
-using ImGuiNET;
 using Lumina.Excel.Sheets;
 using MonsterLootHunter.Data;
 using MonsterLootHunter.Logic;
@@ -23,7 +23,7 @@ public class PluginUi : Window, IDisposable
     private readonly ItemFetchService _itemFetchService;
     private IDalamudTextureWrap? _selectedItemIcon;
     private Item? _selectedItem;
-    private List<KeyValuePair<ItemSearchCategory, List<Item>>> _enumerableCategoriesAndItems = [];
+    private List<KeyValuePair<SearchCategories, List<Item>>> _enumerableCategoriesAndItems = [];
     private LootData? _lootData;
     private readonly float _scale;
     private Vector2 _itemTextSize;
@@ -175,7 +175,7 @@ public class PluginUi : Window, IDisposable
 
                     if (_selectedItemIcon != null)
                     {
-                        ImGui.Image(_selectedItemIcon.ImGuiHandle, new Vector2(40, 40));
+                        ImGui.Image(_selectedItemIcon.Handle, new Vector2(40, 40));
                     }
                     else
                     {
@@ -252,7 +252,7 @@ public class PluginUi : Window, IDisposable
             _itemManagerService.GetEnumerableItems(_searchString, _searchString != _lastSearchString);
     }
 
-    protected internal async Task ChangeSelectedItem(ulong itemId)
+    protected internal async Task ChangeSelectedItem(uint itemId)
     {
         try
         {
@@ -260,10 +260,10 @@ public class PluginUi : Window, IDisposable
             if (_selectedItem is null)
                 return;
 
-            _lootData = default;
+            _lootData = null;
             var token = _tokenSource.Token;
-            _lootData = await _itemFetchService.FetchLootData(_selectedItem.Value, token);
             token.ThrowIfCancellationRequested();
+            _lootData = await _itemFetchService.FetchLootData(_selectedItem.Value, token);
         }
         catch (OperationCanceledException e)
         {
