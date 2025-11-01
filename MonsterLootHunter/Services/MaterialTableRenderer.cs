@@ -1,5 +1,6 @@
 ﻿using System.Linq.Expressions;
 using System.Numerics;
+using System.Text.RegularExpressions;
 using Dalamud.Bindings.ImGui;
 using Dalamud.Interface;
 using MonsterLootHunter.Data;
@@ -195,16 +196,17 @@ public class MaterialTableRenderer(MapManagerService mapManagerService)
         if (!ImGui.CollapsingHeader("Purchased From"))
             return;
 
-        if (ImGui.BeginTable("MLH_PurchasedFromTable", 4,
+        if (ImGui.BeginTable("MLH_PurchasedFromTable", 5,
                              ImGuiTableFlags.ScrollY | ImGuiTableFlags.RowBg | ImGuiTableFlags.Borders | ImGuiTableFlags.NoHostExtendX | ImGuiTableFlags.Reorderable | ImGuiTableFlags.Sortable
                              | ImGuiTableFlags.Resizable,
                              new Vector2(0f, textSize.Y * 13)))
         {
             ImGui.TableSetupScrollFreeze(0, 1);
-            ImGui.TableSetupColumn("Vendor", ImGuiTableColumnFlags.WidthFixed | ImGuiTableColumnFlags.NoSort, 200f, (uint)LootSortId.Name);
+            ImGui.TableSetupColumn("Vendor", ImGuiTableColumnFlags.WidthFixed | ImGuiTableColumnFlags.NoSort, 150f, (uint)LootSortId.Name);
             ImGui.TableSetupColumn("Location", ImGuiTableColumnFlags.WidthFixed | ImGuiTableColumnFlags.DefaultSort, 150f, (uint)LootSortId.Location);
             ImGui.TableSetupColumn("Position", ImGuiTableColumnFlags.WidthFixed | ImGuiTableColumnFlags.NoSort, 100f, (uint)LootSortId.Flag);
             ImGui.TableSetupColumn("Price", ImGuiTableColumnFlags.WidthFixed | ImGuiTableColumnFlags.NoSort, 200f, (uint)LootSortId.Action);
+            ImGui.TableSetupColumn("Actions", ImGuiTableColumnFlags.NoSort, 40.0f, (uint)LootSortId.Action);
             ImGui.TableHeadersRow();
 
             var tableSortSpecs = ImGui.TableGetSortSpecs();
@@ -232,6 +234,7 @@ public class MaterialTableRenderer(MapManagerService mapManagerService)
 
             foreach (var vendor in vendorList)
             {
+                var index = vendorList.IndexOf(vendor);
                 ImGui.TableNextRow();
                 ImGui.AlignTextToFramePadding();
                 ImGui.TableNextColumn();
@@ -242,6 +245,15 @@ public class MaterialTableRenderer(MapManagerService mapManagerService)
                 ImGui.Text(vendor.FlagPosition);
                 ImGui.TableNextColumn();
                 ImGui.Text($"{vendor.Cost} {vendor.CostType}");
+                ImGui.TableNextColumn();
+                if (string.IsNullOrEmpty(vendor.FlagPosition) || !Regex.IsMatch(vendor.FlagPosition, @"\(\d+(?:\.\d+?)?\,.+?\d+(?:\.\d+?)?\)", RegexOptions.Compiled) ||
+                    !mapManagerService.CheckLocation(vendor.Location, out var location))
+                    continue;
+
+                ImGui.PushFont(UiBuilder.IconFont);
+                if (ImGui.Button($"{(char)FontAwesomeIcon.MapMarkerAlt}##listing{index}", new Vector2(25 * _scale, textSize.Y * _scale * 1.5f)))
+                    mapManagerService.MarkMapFlag(location, vendor.FlagPosition);
+                ImGui.PopFont();
                 ImGui.TableNextColumn();
             }
 

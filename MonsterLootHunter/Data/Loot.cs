@@ -1,12 +1,17 @@
 ﻿using MonsterLootHunter.Data.Gatherable;
+using Newtonsoft.Json;
 
 namespace MonsterLootHunter.Data;
 
 public class LootData(string lootName)
 {
     public string LootName { get; set; } = lootName;
+    public bool ContainsWikiData { get; set; }
     public List<LootDrops> LootLocations { get; set; } = [];
     public List<LootPurchase> LootPurchaseLocations { get; set; } = [];
+
+    [JsonIgnore]
+    public bool HasLocations => LootLocations.Count != 0 || LootPurchaseLocations.Count != 0;
 }
 
 public class LootDrops
