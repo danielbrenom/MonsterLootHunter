@@ -58,7 +58,7 @@ public class PluginDependencyContainer
             }
             catch (ArgumentException)
             {
-                //Non disposable services should not interfere
+                //Non-disposable services should not interfere
             }
         }
     }

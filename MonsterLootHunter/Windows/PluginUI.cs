@@ -221,6 +221,9 @@ public class PluginUi : Window, IDisposable
                 #endregion
 
                 ImGui.Separator();
+                ImGui.Text("** - Data not present in internal game data");
+
+                ImGui.Separator();
 
                 #region Purchased From Table
 
@@ -231,6 +234,12 @@ public class PluginUi : Window, IDisposable
                     _materialTableRenderer.RenderVendorTable(vendorList, _itemTextSize);
 
                 #endregion
+            }
+
+            if (!_configuration.PreferWikiData)
+            {
+                ImGui.Text("You have only internal data searching enabled. This may impact results");
+                ImGui.Text("Go to settings and enable Wiki data searching for gatherables to get improved results.");
             }
 
             ImGui.EndChild();

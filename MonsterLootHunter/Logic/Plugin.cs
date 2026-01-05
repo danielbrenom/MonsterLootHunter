@@ -3,6 +3,7 @@ using Dalamud.Interface.Windowing;
 using Dalamud.Plugin;
 using Dalamud.Plugin.Services;
 using Dalamud.Utility;
+using MonsterLootHunter.Data;
 using MonsterLootHunter.Services;
 using MonsterLootHunter.Utils;
 using MonsterLootHunter.Windows;
@@ -12,6 +13,7 @@ namespace MonsterLootHunter.Logic;
 public class Plugin : IDalamudPlugin
 {
     public string Name => PluginConstants.CommandName;
+    public static StoredLootData StoredLootData = new();
 
     private IDalamudPluginInterface PluginInterface { get; init; }
     private ICommandManager CommandManager { get; init; }
@@ -26,6 +28,7 @@ public class Plugin : IDalamudPlugin
         var configuration = (Configuration?)PluginInterface.GetPluginConfig() ?? new Configuration();
         configuration.Initialize(pluginInterface, clientState.ClientLanguage);
         _windowService = new WindowService(new WindowSystem(WindowConstants.WindowSystemNamespace));
+        var httpClient = new HttpClient();
         _pluginDependencyContainer = new PluginDependencyContainer().Register(pluginInterface)
                                                                     .Register(_windowService)
                                                                     .Register(configuration)
@@ -34,10 +37,11 @@ public class Plugin : IDalamudPlugin
                                                                     .Register(textureProvider)
                                                                     .Register(contextMenu)
                                                                     .Register(pluginLog)
+                                                                    .Register(httpClient)
+                                                                    .Register<FileUtils>()
+                                                                    .RegisterModules()
                                                                     .Register<ConfigWindow>()
                                                                     .Register<PluginUi>();
-
-        PluginModule.Register(_pluginDependencyContainer);
         _pluginDependencyContainer.Resolve();
 
         _windowService.RegisterWindow(_pluginDependencyContainer.Retrieve<ConfigWindow>(), WindowConstants.ConfigWindowName);
@@ -55,6 +59,7 @@ public class Plugin : IDalamudPlugin
         PluginInterface.UiBuilder.Draw += DrawUi;
         PluginInterface.UiBuilder.OpenMainUi += _windowService.GetWindow(WindowConstants.MainWindowName).Toggle;
         PluginInterface.UiBuilder.OpenConfigUi += DrawConfigUi;
+        _pluginDependencyContainer.Retrieve<ItemFetchService>().LoadStoredLootData();
     }
 
     private void OnCommand(string command, string args)
@@ -63,8 +68,9 @@ public class Plugin : IDalamudPlugin
         if (pluginWindow is not PluginUi window)
             return;
 
-        pluginWindow.IsOpen = true;
-        window.SearchString = !args.IsNullOrEmpty() ? args : string.Empty;
+        pluginWindow.IsOpen = !pluginWindow.IsOpen;
+        if (pluginWindow.IsOpen)
+            window.SearchString = !args.IsNullOrEmpty() ? args : string.Empty;
     }
 
     private void DrawUi()
@@ -84,6 +90,7 @@ public class Plugin : IDalamudPlugin
     public void Dispose()
     {
         PluginInterface.SavePluginConfig(_pluginDependencyContainer.Retrieve<Configuration>());
+        _pluginDependencyContainer.Retrieve<ItemFetchService>().SaveStoredLootData();
         _pluginDependencyContainer.Dispose();
         CommandManager.RemoveHandler(PluginConstants.CommandSlash);
         CommandManager.RemoveHandler(PluginConstants.ShortCommandSlash);

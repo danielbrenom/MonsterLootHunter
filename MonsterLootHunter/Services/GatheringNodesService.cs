@@ -39,6 +39,7 @@ public class GatheringNodesService
             possibleGatherable.Value.NodeList.Select(node => new LootDrops
             {
                 MobName = possibleGatherable.Value.Name,
+                MobLevel = "**",
                 MobLocation = $"{node.Name} - {node.Territory?.PlaceName.ValueNullable?.Name.ToString() ?? string.Empty}",
                 Node = new LootNode
                 {

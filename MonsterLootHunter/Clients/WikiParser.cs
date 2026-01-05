@@ -31,8 +31,9 @@ namespace MonsterLootHunter.Clients
 
         public static Task<LootData> ParseResponse(HtmlDocument document, LootData lootData)
         {
-            var body = document.DocumentNode.QuerySelector("div#bodyContent");
-            var bodyContent = body.QuerySelector("div.mw-content-ltr div.mw-parser-output");
+            var body = document.DocumentNode;
+            var bodyContent = body.QuerySelector("div.mw-content-ltr div.mw-parser-output") ??
+                              body.QuerySelector("div.mw-content-ltr.mw-parser-output");
             var concurrentList = new ConcurrentBag<LootDrops>();
             Parallel.Invoke(() => { AddToBag(GetDutyDrops, bodyContent); },
                             () => { AddToBag(GetMonsterDropsFromTable, bodyContent); },
@@ -108,8 +109,7 @@ namespace MonsterLootHunter.Clients
         {
             var purchaseHeader = node.QuerySelectorAll("h3").ToList();
             var purchaseTopHeader = node.QuerySelectorAll("h2").ToList();
-            if (!purchaseHeader.Any(n => n.QuerySelector("span#Purchase") != null || n.QuerySelector("span#Purchased") != null || n.QuerySelector("span#Purchased_From") != null) ||
-                purchaseTopHeader.All(n => n.QuerySelector("span#Acquisition") == null))
+            if (!CheckContainsVendorInfo())
                 return [];
 
             var purchaseList = node.QuerySelector("table.npc tbody")?.QuerySelectorAll("tr").ToList();
@@ -124,6 +124,8 @@ namespace MonsterLootHunter.Clients
             {
                 var vendor = vendorNode.QuerySelectorAll("td").ToList();
                 var locationAndFlag = vendor.TryGet(nodes => nodes[1].InnerText).Split("(");
+                var costType = vendor.TryGet(nodes => nodes[3].QuerySelector("span a").Attributes["title"].Value).Replace("\n", "").TrimEnd();
+                costType = Regex.Replace(costType, @"\&.+\;", " ");
 
                 vendors.Add(new LootPurchase
                 {
@@ -131,11 +133,17 @@ namespace MonsterLootHunter.Clients
                     Location = locationAndFlag[0].Replace("\n", "").TrimEnd(),
                     FlagPosition = $"({locationAndFlag[1]}".Replace("\n", ""),
                     Cost = vendor.TryGet(nodes => nodes[3].InnerText).Replaces("&#160;", string.Empty, "\n", string.Empty),
-                    CostType = vendor.TryGet(nodes => nodes[3].QuerySelector("span a").Attributes["title"].Value).Replace("\n", "").TrimEnd()
+                    CostType = costType
                 });
             });
 
             return vendors.AsEnumerable();
+
+            bool CheckContainsVendorInfo() =>
+                purchaseHeader.Any(n => n.InnerText.Contains("Purchase", StringComparison.InvariantCultureIgnoreCase)) ||
+                purchaseTopHeader.Any(n => n.InnerText.Contains("Acquisition")) ||
+                !purchaseHeader.Any(n => n.QuerySelector("span#Purchase") != null || n.QuerySelector("span#Purchased") != null || n.QuerySelector("span#Purchased_From") != null) ||
+                purchaseTopHeader.All(n => n.QuerySelector("span#Acquisition") == null);
         }
 
         private static LootDrops[] GetPossibleRecipe(HtmlNode node)
@@ -179,12 +187,11 @@ namespace MonsterLootHunter.Clients
         {
             var pageHeaders = node.QuerySelectorAll("h3").ToList();
             if (pageHeaders.All(hNode => hNode.QuerySelector("span#Desynthesis") is null &&
-                                         hNode.QuerySelector("span#_Desynthesis") is null))
+                                         hNode.QuerySelector("span#_Desynthesis") is null &&
+                                         !hNode.InnerText.Contains("Desynthesis", StringComparison.InvariantCultureIgnoreCase)))
                 return [];
 
-            var desynthesisHeader = pageHeaders.First(hNode => hNode.QuerySelector("span#Desynthesis") is not null ||
-                                                               hNode.QuerySelector("span#_Desynthesis") is not null);
-            var desynthesisList = desynthesisHeader.NextSibling.NextSibling.QuerySelectorAll("li");
+            var desynthesisList = node.QuerySelector("ul").QuerySelectorAll("li");
             return desynthesisList.Select(treasureMap => new LootDrops
             {
                 MobName = "Desynthesis",
@@ -215,17 +222,17 @@ namespace MonsterLootHunter.Clients
             }
 
             var gatherableInfo = gatherHeader.NextSibling.NextSibling;
-            return gatherableInfo is not null && gatherableInfo.Name != "table" ? Gathered(gatherableInfo) : [];
+            return gatherableInfo.Name != "table" ? Gathered(gatherableInfo) : [];
 
             IEnumerable<LootDrops> Gathered(HtmlNode gatheredNode)
             {
                 var anchors = gatheredNode.QuerySelectorAll("a").ToList();
                 var flag = anchors.LastOrDefault()?.NextSibling.InnerText ?? string.Empty;
                 var flagParsed = CoordinatesRegex().Matches(flag);
-                var gatherTime = GatherTimeRegex().Matches(node.InnerText ?? string.Empty).FirstOrDefault()?.Value ?? string.Empty;
-                var locationName = anchors.Count > 1 ? anchors.First(text => !LocationNameRegex().Match(text.InnerText).Success)?.InnerText : string.Empty;
-                return new[]
-                {
+                var gatherTime = GatherTimeRegex().Matches(node.InnerText).FirstOrDefault()?.Value ?? string.Empty;
+                var locationName = anchors.Count > 1 ? anchors.First(text => !LocationNameRegex().IsMatch(text.InnerText))?.InnerText : string.Empty;
+                return
+                [
                     new LootDrops
                     {
                         MobName = anchors.First().InnerText,
@@ -233,7 +240,7 @@ namespace MonsterLootHunter.Clients
                         MobFlag = flagParsed.Count == 2 ? $"({flagParsed[0].Value},{flagParsed[1].Value})" : string.Empty,
                         MobLevel = LevelRegex().Matches(gatheredNode.ChildNodes.First().InnerText).FirstOrDefault()?.Value ?? string.Empty,
                     }
-                };
+                ];
             }
 
             IEnumerable<LootDrops> Gathering(IEnumerable<HtmlNode> gatheringList) =>
@@ -241,7 +248,7 @@ namespace MonsterLootHunter.Clients
                 let anchors = gatherNode.QuerySelectorAll("a").ToList()
                 let flag = anchors.LastOrDefault()?.NextSibling.InnerText ?? string.Empty
                 let flagParsed = CoordinatesRegex().Matches(flag)
-                let locationName = anchors.FirstOrDefault(text => !LocationNameRegex().Match(text.InnerText).Success)?.InnerText
+                let locationName = anchors.FirstOrDefault(text => !LocationNameRegex().IsMatch(text.InnerText))?.InnerText
                 let locationAlternativeName = locationName is null ? LocationNameAlternativeRegex().Match(anchors.First().NextSibling.InnerText).Groups[1].Value : string.Empty
                 select new LootDrops
                 {
@@ -272,9 +279,10 @@ namespace MonsterLootHunter.Clients
                    select new LootDrops
                    {
                        MobName = columns.TryGet(nodes => nodes[0].ChildNodes[1].InnerText),
-                       MobLocation = $"{columns.TryGet(nodes => nodes[1].QuerySelectorAll("a").ToList()[0].InnerText)} - {columns.TryGet(nodes => nodes[1].QuerySelectorAll("a").ToList()[1].InnerText)}",
+                       MobLocation =
+                           $"{columns.TryGet(nodes => nodes[1].QuerySelectorAll("a").ToList()[0].InnerText)} - {columns.TryGet(nodes => nodes[1].QuerySelectorAll("a").ToList()[1].InnerText)}",
                        MobFlag = flagParsed.Count == 2 ? $"({flagParsed[0].Value},{flagParsed[1].Value})" : string.Empty,
-                       MobLevel = columns.TryGet(nodes => nodes[2].ChildNodes[0].InnerText),
+                       MobLevel = columns.TryGet(nodes => nodes[2].ChildNodes[0].InnerText).Replace("\n", ""),
                    };
         }
     }
