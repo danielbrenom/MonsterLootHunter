@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<Project Sdk="Dalamud.NET.Sdk/14.0.1">
+<Project Sdk="Dalamud.NET.Sdk/15.0.0">
     <PropertyGroup>
         <Authors>Sylf</Authors>
         <Company>Guiomarino Dev</Company>
@@ -36,8 +36,6 @@
     <ItemGroup>
         <PackageReference Include="HtmlAgilityPack" Version="1.12.4" />
         <PackageReference Include="Fizzler.Systems.HtmlAgilityPack" Version="1.2.1" />
-        <PackageReference Include="XivCommon" Version="9.0.0" />
-        <PackageReference Update="DalamudPackager" Version="14.0.1" />
     </ItemGroup>
     <ItemGroup>
       <Compile Update="Data\Gatherable\GatheringNode.Items.cs">
